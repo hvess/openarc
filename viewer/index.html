@@ -12,7 +12,7 @@
   --bg: #f4f4f1; --dot: #d9d9d3; --panel: #ffffff; --card: #ffffff; --raise: #fafaf8;
   --ink: #18191c; --ink-2: #3d3f45; --muted: #6c6f77; --faint: #9b9ea6; --line: #e4e4df; --line-2: #d4d4ce;
   --add: #1a8f4c; --add-bg: #e7f5ec; --chg: #b26d00; --chg-bg: #fbf0dc; --del: #c9372c; --del-bg: #fbe9e7;
-  --ctx: #8d9098; --ctx-bg: #f0f0ed; --accent: #4353d6; --accent-bg: #eceefd;
+  --ctx: #8d9098; --ctx-bg: #f0f0ed; --accent: #4353d6; --accent-bg: #eceefd; --k-ref: #0b7a63; --k-val: #b8541a;
   --shadow: 0 1px 2px rgb(20 20 30 / 0.06), 0 4px 16px rgb(20 20 30 / 0.06);
   --mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
   --sans: "Inter", ui-sans-serif, system-ui, -apple-system, sans-serif;
@@ -23,7 +23,7 @@
     --bg: #0f1012; --dot: #26282d; --panel: #16171a; --card: #1b1c20; --raise: #202126;
     --ink: #ececee; --ink-2: #c9cad0; --muted: #9a9da6; --faint: #6d7079; --line: #2a2c31; --line-2: #34363c;
     --add: #43c97f; --add-bg: #15301f; --chg: #e3a643; --chg-bg: #33280f; --del: #f06a5f; --del-bg: #3a1a17;
-    --ctx: #7c7f88; --ctx-bg: #1f2024; --accent: #8e99ff; --accent-bg: #23264a;
+    --ctx: #7c7f88; --ctx-bg: #1f2024; --accent: #8e99ff; --accent-bg: #23264a; --k-ref: #4ccdab; --k-val: #f0905e;
     --shadow: 0 1px 2px rgb(0 0 0 / 0.3), 0 6px 20px rgb(0 0 0 / 0.25);
     color-scheme: dark;
   }
@@ -32,7 +32,7 @@
   --bg: #0f1012; --dot: #26282d; --panel: #16171a; --card: #1b1c20; --raise: #202126;
   --ink: #ececee; --ink-2: #c9cad0; --muted: #9a9da6; --faint: #6d7079; --line: #2a2c31; --line-2: #34363c;
   --add: #43c97f; --add-bg: #15301f; --chg: #e3a643; --chg-bg: #33280f; --del: #f06a5f; --del-bg: #3a1a17;
-  --ctx: #7c7f88; --ctx-bg: #1f2024; --accent: #8e99ff; --accent-bg: #23264a;
+  --ctx: #7c7f88; --ctx-bg: #1f2024; --accent: #8e99ff; --accent-bg: #23264a; --k-ref: #4ccdab; --k-val: #f0905e;
   --shadow: 0 1px 2px rgb(0 0 0 / 0.3), 0 6px 20px rgb(0 0 0 / 0.25);
   color-scheme: dark;
 }
@@ -142,7 +142,7 @@ button { font: inherit; color: inherit; }
 #sideToggle { display: none; }
 
 /* ---------- drawer ---------- */
-#drawer { position: absolute; top: 0; right: 0; bottom: 0; width: min(460px, 100%); background: var(--panel); border-left: 1px solid var(--line); box-shadow: -12px 0 32px rgb(0 0 0 / .06); overflow-y: auto; transform: translateX(100%); transition: transform .22s cubic-bezier(.2,.8,.2,1); z-index: 4; }
+#drawer { position: absolute; top: 0; right: 0; bottom: 0; width: min(540px, 100%); background: var(--panel); border-left: 1px solid var(--line); box-shadow: -12px 0 32px rgb(0 0 0 / .06); overflow-y: auto; transform: translateX(100%); transition: transform .22s cubic-bezier(.2,.8,.2,1); z-index: 4; }
 #drawer.open { transform: none; }
 .dw { padding: 18px 22px 40px; }
 .dw-top { display: flex; align-items: center; gap: 8px; }
@@ -164,14 +164,20 @@ pre.klar .ln-add { background: color-mix(in srgb, var(--add-bg) 70%, transparent
 pre.klar .ln-del { background: color-mix(in srgb, var(--del-bg) 70%, transparent); } pre.klar .ln-del .gut { color: var(--del); }
 pre.klar .ln-del > :not(.gut) { opacity: .75; }
 pre.klar .ln-chg .gut { color: var(--chg); }
-.t-kw { color: var(--accent); font-weight: 500; }
-.t-str { color: var(--ink-2); font-style: italic; }
-.t-doc { color: var(--muted); font-style: italic; }
-.t-ty { color: var(--chg); }
-.t-num { color: var(--add); }
+.t-kw { color: var(--accent); font-weight: 600; }
+.t-decl { color: var(--accent); opacity: .75; }
+.t-fn { color: var(--ink); font-weight: 600; }
+.t-ref { color: var(--k-ref); }
+.t-call { color: var(--k-ref); text-decoration: underline dotted; text-underline-offset: 3px; cursor: pointer; }
+.t-call:hover { text-decoration-style: solid; }
+.t-val { color: var(--k-val); }
+.t-verb { color: var(--ink); font-weight: 500; }
+.t-eff { color: var(--muted); font-style: italic; }
 .t-op { color: var(--faint); }
 .t-com { color: var(--faint); font-style: italic; }
-.t-at { color: var(--faint); }
+pre.klar .ind { display: inline-block; width: 2ch; height: 1.7em; vertical-align: top; }
+pre.klar .ind.rail { box-shadow: inset 1.5px 0 0 color-mix(in srgb, var(--accent) 35%, transparent); }
+pre.klar .ln { min-height: 1.7em; }
 .chips { display: flex; gap: 6px; flex-wrap: wrap; }
 .chip { font: 500 12px var(--mono); padding: 3px 9px; border-radius: 7px; background: var(--raise); border: 1px solid var(--line); }
 .chip.gone { text-decoration: line-through; color: var(--del); border-color: transparent; background: var(--del-bg); }
@@ -581,29 +587,91 @@ addEventListener("keydown", (e) => {
 });
 
 // ---------- Klar highlighting ----------
-const KW = new Set("klar change class module interface record enum external fn const state type needs private let set if else for each in while match case return fail wait emit spawn new not and or is missing effects elides none with".split(" "));
-const TOK = /("[^"]*")|(#.*$)|(@\s*[\w./-]*:?[\d-]*)|(\b[A-Za-z_][\w]*\b)|(\b\d+(?:\.\d+)?\b)|(→|->|←|<-|≥|≤|×|…|=)/g;
-function tok(s) {
-  let out = "", last = 0, m;
+// Control words, declarations and effect words are fixed by the language. Names are
+// highlighted when the graph or the block itself defines them, and calls that match one
+// of the member's edges become links to that member.
+const CONTROL = "Wait for all|Wait for|For each|Repeat up to|Depending on|Else if|If|Else|When|Return|Fail|Skip|Stop";
+const DECL = new Set(["class", "module", "interface", "record", "enum", "external", "needs", "state", "const", "private", "klar", "change"]);
+const VERBS = new Set(["get", "create", "set", "add", "remove", "compute", "read", "write", "send"]);
+const PLAIN = new Set(["missing", "exists", "not", "no", "has", "is", "in", "of", "for", "from", "to", "and", "or", "with"]);
+const TOK = new RegExp(`\\b(${CONTROL})\\b|("[^"]*")|(#.*$)|(\\b\\d+(?:\\.\\d+)?(?:\\s(?:s|ms|min)\\b)?)|([A-Za-z_]\\w*(?:\\.[A-Za-z_]\\w*)*)|(→|≥|≤|≠|=|\\+|×|÷|−|·|\\||<|>|:|…)`, "g");
+const EFFECT = /^(no effects|changes|reads|writes|sends|fails|depends on)\b/;
+
+const globalNames = new Set();
+for (const c of comps.values()) {
+  globalNames.add(c.name);
+  for (const m of c.members) globalNames.add(m.name.split(".").pop());
+}
+function namesIn(list) {
+  return (list || "").split(",").map((p) => p.split("=")[0].trim()).filter((n) => /^[A-Za-z_]\w*$/.test(n));
+}
+function klarContext(id) {
+  const c = compOf(id), m = members.get(id);
+  const refs = new Set(globalNames);
+  for (const src of [c?.klar, m?.klar]) {
+    for (const line of (src || "").split("\n")) {
+      const body = line.slice(2).trim();
+      if (/^(?:private\s+)?[A-Za-z_][\w.]*\(/.test(body)) for (const g of body.matchAll(/\(([^)]*)\)/g)) namesIn(g[1]).forEach((n) => refs.add(n));
+      const needs = body.match(/^needs\s+(.*)$/);
+      if (needs) namesIn(needs[1]).forEach((n) => refs.add(n));
+      const bind = body.match(/^([A-Za-z_]\w*)\s*=\s/);
+      if (bind) refs.add(bind[1]);
+    }
+  }
+  const calls = new Map();
+  for (const e of outE.get(id) || []) {
+    const t = members.get(e.to);
+    if (t) calls.set(t.name.split(".").pop(), t.id);
+  }
+  return { refs, calls };
+}
+function tok(s, ctx, isDecl) {
+  let out = "", last = 0, m, named = false;
   TOK.lastIndex = 0;
   while ((m = TOK.exec(s))) {
     out += esc(s.slice(last, m.index));
-    const [t, str, com, at, word, num, op] = m;
-    if (str) out += `<span class="${s.trimStart().startsWith('"') && m.index === s.length - s.trimStart().length ? "t-doc" : "t-str"}">${esc(t)}</span>`;
+    const [t, control, str, com, num, word] = m;
+    const paren = word && s[m.index + t.length] === "(";
+    const before = s.slice(0, m.index);
+    if (control) out += `<span class="t-kw">${esc(t)}</span>`;
+    else if (str || num) out += `<span class="t-val">${esc(t)}</span>`;
     else if (com) out += `<span class="t-com">${esc(t)}</span>`;
-    else if (at) out += `<span class="t-at">${esc(t)}</span>`;
-    else if (word) out += KW.has(word) ? `<span class="t-kw">${esc(t)}</span>` : /^[A-Z][a-z]/.test(word) ? `<span class="t-ty">${esc(t)}</span>` : esc(t);
-    else if (num) out += `<span class="t-num">${esc(t)}</span>`;
-    else out += `<span class="t-op">${esc(t)}</span>`;
+    else if (word) {
+      const base = t.split(".")[0], tail = t.split(".").pop();
+      if (DECL.has(t) && !before.trim().replace(/\b(private|const|state)\b/g, "").trim()) out += `<span class="t-decl">${t}</span>`;
+      else if (isDecl && !named) { out += `<span class="t-fn">${esc(t)}</span>`; named = true; }
+      else if (paren && ctx.calls.has(tail)) out += `<span class="t-call" data-goto="${esc(ctx.calls.get(tail))}">${esc(t)}</span>`;
+      else if (paren && (t.includes(".") || ctx.refs.has(base))) out += `<span class="t-ref">${esc(t)}</span>`;
+      else if (ctx.refs.has(base) || /^[A-Z][a-z]+[A-Z]/.test(t) || /^[A-Z][A-Z_]+$/.test(t)) out += `<span class="t-ref">${esc(t)}</span>`;
+      else if (VERBS.has(t) && !before.trim() || VERBS.has(t) && /=\s*$/.test(before)) out += `<span class="t-verb">${t}</span>`;
+      else if (!PLAIN.has(t) && /(?:Return|is|→|\|)\s*$/.test(before)) out += `<span class="t-val">${esc(t)}</span>`;
+      else out += esc(t);
+    } else out += `<span class="t-op">${esc(t)}</span>`;
     last = m.index + t.length;
   }
   return out + esc(s.slice(last));
 }
-function klarHTML(src) {
-  return src.replace(/\n+$/, "").split("\n").map((line) => {
+function effectHTML(s, ctx) {
+  return s.split("·").map((part) => {
+    const p = part.trim(), e = p.match(EFFECT);
+    if (!e) return esc(p);
+    const rest = p.slice(e[0].length);
+    return `<span class="t-eff">${e[0]}</span>${rest.replace(/[A-Za-z_]\w*/g, (w) => (ctx.refs.has(w) ? `<span class="t-ref">${w}</span>` : w))}`;
+  }).join(` <span class="t-op">·</span> `);
+}
+function klarHTML(src, id) {
+  const ctx = klarContext(id);
+  let footer = false;
+  return src.replace(/\n+$/, "").split("\n").map((line, i) => {
     const g = line[0] || " ", rest = line.slice(2);
     const cls = g === "+" ? "ln-add" : g === "-" ? "ln-del" : g === "~" ? "ln-chg" : "";
-    return `<span class="ln ${cls}"><span class="gut">${g === " " ? "" : g === "-" ? "−" : esc(g)}</span>${tok(rest)}</span>`;
+    const gut = `<span class="gut">${g === " " ? "" : g === "-" ? "−" : esc(g)}</span>`;
+    if (!rest.trim()) { if (i > 0) footer = true; return `<span class="ln ${cls}">${gut}</span>`; }
+    const n = rest.length - rest.trimStart().length;
+    const ind = Array.from({ length: Math.floor(n / 2) }, (_, k) => `<span class="ind${k >= 1 ? " rail" : ""}"></span>`).join("") + (n % 2 ? " " : "");
+    const body = rest.trimStart();
+    const html = footer ? effectHTML(body, ctx) : tok(body, ctx, i === 0 || (n === 0 && /^(?:private|state|const|needs)\b/.test(body)) || /^(?:private|state|const)\s/.test(body));
+    return `<span class="ln ${cls}">${gut}${ind}${html}</span>`;
   }).join("");
 }
 // The drawer shows the summary as prose above the block, so drop the matching doc line from it.
@@ -665,8 +733,8 @@ function openDrawer(id) {
       <h2><span class="cn">${esc(c.name)}.</span>${esc(m.name)}</h2>
       <div class="badges"><span class="pill s-${m.status}">${STATUS_LABEL[m.status]}</span><span class="tag">${esc(m.kind)}</span>${m.visibility === "private" ? `<span class="tag">private</span>` : ""}</div>
       ${m.summary ? `<p class="lead">${esc(m.summary)}</p>` : ""}
-      ${m.klar ? `<section><h3>Klar</h3><pre class="klar">${klarHTML(withoutDoc(m.klar, m.summary))}</pre></section>` : ""}
-      ${effectsHTML(m)}
+      ${m.klar ? `<section><h3>Klar</h3><pre class="klar">${klarHTML(withoutDoc(m.klar, m.summary), m.id)}</pre></section>` : ""}
+      ${m.klar && (m.effects || m.baseEffects) ? "" : effectsHTML(m)}
       ${(outE.get(id) || []).length ? `<section><h3>Uses</h3>${linkList(outE.get(id), "out")}</section>` : ""}
       ${(inE.get(id) || []).length ? `<section><h3>Used by</h3>${linkList(inE.get(id), "in")}</section>` : ""}
       ${notesFor(id)}
@@ -678,7 +746,7 @@ function openDrawer(id) {
       <h2>${esc(c.name)}</h2>
       <div class="badges"><span class="pill s-${c.status}">${STATUS_LABEL[c.status]}</span><span class="tag">${esc(c.kind)}</span></div>
       ${c.summary ? `<p class="lead">${esc(c.summary)}</p>` : ""}
-      ${c.klar ? `<section><h3>Klar</h3><pre class="klar">${klarHTML(c.klar)}</pre></section>` : ""}
+      ${c.klar ? `<section><h3>Klar</h3><pre class="klar">${klarHTML(c.klar, c.id)}</pre></section>` : ""}
       <section><h3>Members</h3><ul class="links">${c.members.map((x) => `<li><button type="button" data-goto="${esc(x.id)}"><span class="ek">${MK[x.kind] || esc(x.kind)}</span><span class="dot s-${x.status}"></span><span class="en">${esc(x.name)}</span></button></li>`).join("")}</ul></section>
       ${ins.length ? `<section><h3>Used by</h3>${linkList(ins, "in")}</section>` : ""}
       ${notesFor(c.id)}`;

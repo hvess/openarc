@@ -1,284 +1,379 @@
-# Klar 0.1
+# Klar 0.2
 
-*Draft. Status: open for comment.*
+*Draft. Status: open for comment. Replaces Klar 0.1.*
 
-Klar is a language for describing what code does, in simpler terms than the code itself. A Klar document restates a code change so that a reviewer can follow its intent, structure and side effects without reading the source language.
+Klar is a language for describing what code does, in simpler terms than the code itself. A Klar description restates a function so that a reviewer can follow its logic, what it calls and what it changes, without knowing the language it was written in.
 
-Klar is not executable. It is not a programming language and has no runtime. It is closer to the pseudocode in a well-written design doc, but with enough fixed structure that tools can read it, check it and draw it.
+Klar is not executable. It's a controlled language, in the same spirit as Simplified Technical English (ASD-STE100): a small set of words, each with exactly one meaning, and one action per line.
 
 ```klar
-+ class RateLimiter @ src/limits/rate-limiter.ts
-    "Gives each client a token bucket sized by their plan."
-    needs clock: Clock
-    state buckets: Map<ClientId, TokenBucket> @ :9
+  check(client, plan) → allowed | denied
+    now = clock.now()
+    bucket = bucketFor(client, plan, now)
+    bucket.refill(now)
+    taken = bucket.tryTake()
+    If taken:
+      Return allowed
+    Return denied + retryAfter = bucket.secondsUntilNext(), rounded up
 
-    fn check(clientId: Text, plan: Plan) -> Decision @ :13-19
-      "Spend one token for this client, or say how many seconds until one is available."
-      let now = clock.now()
-      let bucket = bucketFor(clientId, plan, now)
-      bucket.refill(now)
-      if bucket.tryTake()
-        return allowed
-      return denied, retryAfter = ceil(bucket.secondsUntilNext())
-      effects: time, mutates buckets
+    changes buckets · depends on time
 ```
 
 ## 1. Goals
 
-1. **Readable by anyone who reads code.** A reviewer who does not know the source language should understand a Klar block on the first read.
-2. **One language for every source language.** TypeScript, Rust, Go, Python and Swift all map to the same small set of constructs.
-3. **Shows what matters for review.** Mutation, I/O, time, failure and changes between versions are always visible. Boilerplate is not.
-4. **Traceable.** Every declaration points back to the source lines it describes, so a reader can check the Klar against the code.
-5. **Diff-aware.** A Klar document can describe a *change*, marking what was added, changed and removed.
+1. **Clear.** Each line has one meaning. There are no idioms ("pass on", "handle", "set up") and no conditions hidden inside sentences.
+2. **Concise and technical, without jargon.** Steps are short verb phrases, and names come straight from the code. Klar never asks the reader to know a concept from a particular language or framework.
+3. **Language-neutral.** TypeScript, Go, Python, Rust, Swift and Kotlin code all produce the same Klar for the same behaviour (§ 12).
+4. **Shows what matters for review.** Calls into other code, changes to state, waiting, failing and the differences between versions are always visible.
+5. **Diff-aware.** A Klar document can describe a change, marking what was added, changed and removed.
 
 ### Non-goals
 
-- Klar does not round-trip. You cannot generate code from it.
-- Klar does not try to be complete. Leaving things out is the point; § 8 says how to do it honestly.
-- Klar does not try to be precise about types. Types are there to help the reader, not to be checked.
+- Klar doesn't round-trip. You can't generate code from it.
+- Klar isn't complete. It leaves things out on purpose, and says so (§ 11).
+- Klar doesn't carry types, source locations or summaries. Those live in the [OpenArc graph](graph.md) alongside it, which keeps the text short.
 
 ## 2. Documents
 
-A Klar document is UTF-8 text, conventionally with the extension `.klar`. It begins with a version line and may name the change it describes:
+A Klar document is UTF-8 text with the extension `.klar`. It starts with a version line, may name the change it describes, and then lists components:
 
 ```klar
-  klar 0.1
+  klar 0.2
   change "Rate-limit authenticated requests per client"
+
++ class RateLimiter
+    …
 ```
 
-The rest of the document is a sequence of **components**, each containing **members**. Lines starting with `#` (after the gutter) are comments.
+A line whose text starts with `#` is a comment.
 
 ## 3. The gutter
 
-Every line starts with a two-character **gutter**: a status mark followed by a space.
+Every line starts with a two-character **gutter**: a change mark and a space.
 
 | Mark | Meaning |
 |---|---|
 | `+` | Added by this change |
 | `-` | Removed by this change |
-| `~` | Changed by this change (only on declarations; see below) |
-| ` ` | Unchanged, or inherits the status of the enclosing declaration |
+| `~` | Changed by this change (declarations only) |
+| ` ` | Unchanged, or inherits the mark of the declaration it's in |
 
-Rules:
+- A mark on a component or member applies to all of it. Lines inside an added or removed declaration leave the gutter blank.
+- `~` marks a declaration whose body changed. Inside it, each line is marked `+`, `-` or blank (unchanged).
+- A line that changed in place is written as its old version (`-`) followed by its new version (`+`).
+- A document that doesn't describe a change leaves every gutter blank.
 
-- A mark on a **declaration** (component or member) applies to the whole declaration. Lines inside an added or removed declaration leave their gutter blank; they inherit it.
-- `~` marks a declaration whose body changed. Inside it, individual lines carry `+` or `-`, and unmarked lines are unchanged.
-- A line that changed in place is written as a `-` line followed by a `+` line.
-- A document that does not describe a change uses a blank gutter everywhere.
+## 4. Indentation and blocks
 
-```klar
-~   fn createOrder(req: Request) -> Response @ :9-12
-      "Store a new order for the signed-in user."
--     if they placed MAX_ORDERS_PER_MINUTE or more in the last minute
--       return 429
-      let order = db.orders.insert(req.user.id, req.body)
-      return 201 with order
--     effects: time, mutates recentOrders, io db
-+     effects: io db
-```
-
-## 4. Indentation
-
-After the gutter, indentation is two spaces per level and is significant:
+After the gutter, Klar is indented two spaces per level. Tabs aren't allowed.
 
 | Level | Holds |
 |---|---|
-| 0 | Component declarations |
-| 2 | Component description, `needs`, `state`, and member declarations |
-| 4+ | Member bodies |
+| 0 | Components |
+| 2 | `needs`, `state`, `const` and member signatures |
+| 4 and deeper | Steps |
 
-Tabs are not allowed.
+Blocks follow three rules:
+
+1. **A line that opens a block ends with a colon**: `If …:`, `Else:`, `For each …:`, `Wait for all:`.
+2. **The block is everything indented under it, and ends where the indentation ends.** Nothing else ends a block.
+3. **Conditions never appear inside a sentence.** "Create a bucket if the client is new" isn't Klar. Write `If bucket is missing:` and put the step underneath.
+
+Renderers should draw a rail beside every block so the reader can see where it ends.
 
 ## 5. Components
 
-A component is a unit of code that a reviewer would draw as a box: a class, a module of functions, an interface.
+A component is something a reviewer would draw as a box.
 
 ```
-<kind> <Name> [@ <path>]
+<kind> <Name>
 ```
 
 | Kind | Use for |
 |---|---|
-| `class` | A type with behaviour: a class, a Rust `struct` plus its `impl`, a Go struct with methods |
+| `class` | A type with behaviour: a class, a Rust `struct` with its `impl`, a Go struct with methods |
 | `interface` | A contract: an interface, trait, protocol or abstract class |
 | `module` | A file or namespace of free functions and constants |
 | `record` | Data with no behaviour: a struct, data class or plain object type |
-| `enum` | A closed set of variants |
-| `external` | Something outside the codebase that the change talks to, such as a third-party API or a database |
+| `enum` | A closed set of cases |
+| `external` | Something outside the codebase that the change talks to, such as a third-party API |
 
-Inside a component, before its members:
-
-- An optional **description**: a single double-quoted line saying what the component is for.
-- `needs a: T, b: U`: what the component is given when it is created (constructor parameters, injected dependencies).
-- `state name: T`: data the component holds and may change. State is declared because mutation is one of the things reviewers most need to see.
-
-## 6. Members
-
-```
-[private] fn <name>(<params>) [-> <Type>] [@ <anchor>]
-const <NAME>[: <Type>] [= <value>] [@ <anchor>]
-state <name>: <Type> [@ <anchor>]
-type <Name> = <Type> [@ <anchor>]
-```
-
-A member declaration ending in `…` has its body intentionally omitted, usually because it is unchanged context:
+Inside a component, before its functions:
 
 ```klar
-    fn handle(req: Request) -> Response @ :30-35 …
++ class RateLimiter
+    needs clock
+    state buckets = one TokenBucket per client, never removed
 ```
 
-A function body is made of:
+- `needs a, b`: what the component is given when it's created (constructor arguments, injected dependencies).
+- `state name = description`: data the component holds and can change. State is always declared, because changes to it are among the things reviewers most need to see.
+- `const NAME = value or description`: a fixed value. A constant whose value is a table may list it in an indented block underneath.
 
-1. An optional **description** on the first line, double-quoted. Required for added and changed functions.
-2. **Steps** (§ 7).
-3. An optional `effects:` clause (§ 9). Required for added and changed functions.
-4. An optional `elides:` clause (§ 8).
+## 6. Signatures
+
+A function starts with its signature:
+
+```
+[private] name(inputs) [→ result]
+```
+
+- **Inputs** are the parameter names from the code, without types. A default value may be shown: `buildServer(clock = systemClock)`.
+- **The result** says what comes back, in a few words or as alternatives: `→ order`, `→ allowed | denied`, `→ 201 + order`. A function that returns nothing omits it.
+- **A function value given as an input, or returned, is described where it's introduced**, so the reader never needs to know the pattern behind it:
+
+  ```klar
+    rateLimit(limiter) → request step(request, next = rest of the chain)
+  ```
+
+  Here `next` is defined as "the rest of the chain", so `Return next(request)` reads as "run the rest of the chain".
+
+- A signature followed by `…` has its body left out, usually because it's unchanged context: `handle(request) → response …`.
 
 ## 7. Steps
 
-A step is one line. It is either a **keyword step** or a **prose step**.
+A step is one line, and does one thing. It's one of:
 
-### Keyword steps
+- a **verb step**: one of the verbs in § 7.1, followed by what it acts on
+- a **call** to another function in the graph (§ 7.2)
+- a **control** line (§ 8)
+- a **binding** of any of these to a name (§ 7.3)
+
+### 7.1 Verbs
+
+Klar has a fixed set of verbs. Each has one meaning, and no other verbs are allowed at the start of a step.
+
+| Verb | Meaning | Example |
+|---|---|---|
+| `get` | Look up a value without changing anything | `bucket = get buckets[client]` |
+| `create` | Make a new object or record | `create TokenBucket(capacity, rate, now)`, `create Contact from row` |
+| `set` | Replace a value | `set order.status = shipped` |
+| `add` | Put an item into a collection, or increase a number | `add row to rejected`, `add 1 to count` |
+| `remove` | Take items out of a collection | `remove times older than 1 min from recent` |
+| `compute` | Work out a value from others | `elapsed = compute now − updatedAt, in seconds` |
+| `read` | Read from outside the program: a file, the network, the environment | `rows = read rows from file` |
+| `write` | Write to outside the program | `write report to file` |
+| `send` | Send a message, event or notification | `send ImportFinished(count, rejected)` |
+
+`compute` may be left out when the expression is short and plain: `elapsed = now − updatedAt, in seconds`.
+
+These words are banned at the start of a step because they hide what happens: *handle, process, manage, deal with, pass on, set up, wire, take care of, prepare, check*. Use a call, a verb from the table, or a control line instead.
+
+### 7.2 Calls
+
+When a step uses another function that appears in the graph, it's written as a call, with the names from the code:
+
+```klar
+      decision = limiter.check(user.id, user.plan)
+      Wait for contacts.save(contact)
+```
+
+Calls are how Klar crosses from one box in the diagram to another, and renderers link them to the function they reach (§ 13). Prose is only for logic *inside* the function.
+
+### 7.3 Naming results
+
+A step whose result is used later binds it to a name with `=`:
+
+```klar
+      order = Wait for db.orders.insert(user.id, request.body)
+```
+
+`=` binds a name, sets a value (`set tokens = tokens − 1`), or names part of a result (`Return 429 + retry-after = decision.retryAfter`). It never compares.
+
+### 7.4 Values and conditions
+
+| Form | Examples |
+|---|---|
+| Numbers, with a unit where it helps | `429`, `20`, `1 s`, `5 min`, `100 ms` |
+| Text | `"/orders"`, `"product:" + id` |
+| Named outcomes and states | `allowed`, `denied`, `paid`, `yes`, `no` |
+| Absence | `missing` (null, nil, None, undefined), `exists` (the opposite) |
+
+Conditions use `is`, `has` and comparisons:
+
+```klar
+      If decision is denied:
+      If request has no user:
+      If cached exists:
+      If tokens ≥ 1:
+```
+
+### 7.5 Operators
+
+| Operator | Meaning | ASCII form |
+|---|---|---|
+| `→` | gives back | `->` |
+| `\|` | or (between alternatives) | |
+| `+` | plus, or "together with" (`201 + order`) | |
+| `−` `×` `÷` | minus, times, divided by | `-` `*` `/` |
+| `<` `≤` `>` `≥` `≠` | comparisons | `<=` `>=` `!=` |
+| `=` | binds or sets | |
+| `·` | separates effects in the footer | `,` |
+
+## 8. Control
+
+Control words are capitalised so they stand out even without highlighting.
 
 | Form | Meaning |
 |---|---|
-| `let x = <expr>` | Introduce a name |
-| `set <target> = <expr>` | Change something that already exists. Every mutation uses `set`, so mutation is easy to scan for |
-| `if <cond>` / `else if <cond>` / `else` | Branch; the body is indented |
-| `for each x in <expr>` | Loop over a collection |
-| `while <cond>` | Loop on a condition |
-| `match <expr>` with `case <pattern>` | Branch on the shape of a value |
-| `return <expr>` | Produce the result |
-| `fail <Error> ["reason"]` | Stop with an error (throw, panic, `Err(...)`) |
-| `wait for <expr>` | Suspend until something completes (`await`, blocking I/O, joins) |
-| `emit <event>` | Send an event, message or notification |
-| `spawn <expr>` | Start concurrent work without waiting for it |
-| `fn (<params>):` | A function value, such as a closure or callback; the body is indented |
+| `If <condition>:` | Run the block when the condition holds |
+| `Else if <condition>:` | Otherwise, run this block when its condition holds |
+| `Else:` | Otherwise, run this block |
+| `Depending on <value>:` with `When <case>[, <case>]:` | Run the block for the matching case |
+| `For each <item> in <collection>:` | Run the block once per item |
+| `While <condition>:` | Run the block as long as the condition holds |
+| `Repeat up to <n> times:` | Run the block at most `n` times |
+| `Skip` | Go to the next item of the loop it's in |
+| `Stop` | Leave the loop it's in |
+| `Wait for <call or duration>` | Pause until the call finishes or the time passes |
+| `Wait for all:` | Start every call in the block at the same time, and continue once they've all finished. If any of them fails, the block fails |
+| `Return <value>` | End the function with this result |
+| `Fail <Error>[(details)]` | End the function with this error |
 
-### Prose steps
-
-Any line that does not start with a keyword is a prose step: a short imperative sentence describing one action.
-
-```klar
-      refill bucket by the time elapsed since its last refill
-      drop this user's order times older than one minute
-```
-
-Prose steps are the reason Klar is readable. They are also where it can become vague. Producers should follow these rules:
-
-- One action per line.
-- Use the names that appear in the code. If the code says `bucket`, the prose says `bucket`.
-- Prefer a keyword step whenever one fits. Use prose for logic that would take several keyword steps without being clearer.
-
-### Expressions
-
-Expressions borrow familiar notation: calls `a.b(c)`, member access `a.b`, indexing `a[b]`, arithmetic, comparison (`<`, `≥` or `>=`), and boolean `and`, `or` and `not`. Constructing an object is written `new T(args)`. Expressions may also be short phrases (`return 429 with retry-after`) when that reads more clearly than a literal translation.
-
-### References
-
-Inside a body, a name qualified as `Component.member` refers to a member of another component in the document or graph. A bare name refers to something in the current component or local scope. Tools may cross-check references against the graph's edges.
-
-## 8. Elision
-
-Klar leaves things out on purpose. To be honest about it, a function may list what kinds of code it left out:
+`Return` and `Fail` always end the whole function. Once a branch ends in `Return` or `Fail`, an `Else` after it isn't needed:
 
 ```klar
-      elides: logging, metrics, input validation
-```
-
-Standard categories: `logging`, `metrics`, `tracing`, `input validation`, `null checks`, `error propagation`, `type conversion`, `retries`, `resource cleanup`. Producers must not leave out anything that changes behaviour a caller can observe. If a null check decides whether a request succeeds, it is a step, not an elision.
-
-An `…` on its own line marks an elided span inside a body:
-
-```klar
-      …                                   # parse and normalise headers
+      If request has no user:
+        Return next(request)
+      decision = limiter.check(user.id, user.plan)
 ```
 
 ## 9. Effects
 
-`effects:` lists what a function does besides computing its return value. This is the most important line for a reviewer.
+A function ends with a blank line and an **effects footer**: what it does besides producing its result. For a reviewer it's often the most important part.
+
+```klar
+      changes buckets · depends on time
+```
 
 | Effect | Meaning |
 |---|---|
-| `none` | Pure: same inputs give the same result and nothing else happens |
-| `mutates <target>` | Changes in-memory state (`self`, a field, an argument) |
-| `reads <target>` / `writes <target>` | Reads or writes persistent or shared state outside the process's own memory |
-| `io <channel>` | Talks to the outside world: `db`, `net`, `disk`, `process`, `ipc` |
-| `time` | Depends on the current time |
-| `random` | Depends on randomness |
-| `fails <Error>` | Can fail with this error |
-| `waits` | Suspends (async or blocking) |
-| `spawns` | Starts concurrent work |
-| `emits <event>` | Sends events or messages |
+| `changes <state>` | Changes state the program holds: a component's `state`, an object it was given |
+| `reads <thing>` | Reads from outside the program: a database, cache, file or service |
+| `writes <thing>` | Writes to outside the program |
+| `sends <message>` | Sends a message, event, email or notification |
+| `fails <Error>` | Can end with this error |
+| `depends on time` / `depends on randomness` | Gives different results at different times, or on different runs |
+| `no effects` | None of the above |
 
-Effects describe the function's own body, not its callees. A reader follows the edges to see those.
+Effects describe the function's own steps, not the functions it calls; the reader follows the calls to see those.
 
-## 10. Source anchors
+In a changed function, footer lines carry change marks like any other line:
 
-`@` ties a declaration to source:
-
-- On a component: `@ <path>`, the file path relative to the repository root.
-- On a member: `@ :<start>-<end>` or `@ :<line>` for lines in the component's file, or `@ <path>:<start>-<end>` for a different file.
-
-Line numbers refer to the **head** (after) version of the file, except for removed (`-`) declarations, which refer to the **base** (before) version.
-
-## 11. Types
-
-Types are written in a small common vocabulary so that reviewers do not need to know the source language's:
-
-`Bool`, `Int`, `Num`, `Text`, `Bytes`, `Time`, `Duration`, `Any`, `List<T>`, `Set<T>`, `Map<K, V>`, `Maybe<T>`, `Result<T, E>`, records `{ a: T, b: U }`, and unions `A | B`.
-
-Domain types keep the names they have in the code (`Plan`, `TokenBucket`). Types may be omitted wherever they would not help the reader.
-
-## 12. Conformance
-
-A **conformant Klar 0.1 document**:
-
-1. Starts with `klar 0.1`.
-2. Uses a two-character gutter on every line and two-space indentation.
-3. Gives every added or changed function a description and an `effects:` clause.
-4. Uses `set` for every mutation that the source performs.
-5. Gives every component a path anchor, and every added, changed or removed member a line anchor.
-
-A **conformant producer** (a person, tool or agent that writes Klar) also:
-
-6. Keeps the code's names.
-7. Leaves out nothing that changes behaviour a caller can observe (§ 8).
-8. Keeps function bodies short. About 12 steps is the guideline; a longer function is described in larger steps, not line by line.
-
-## 13. Grammar
-
-Informal, line-oriented. `INDENT(n)` is `n` spaces after the gutter.
-
-```ebnf
-document   = version-line , { change-line | comment | blank | component } ;
-version-line = gutter , "klar" , SP , version ;
-change-line  = gutter , "change" , SP , string ;
-
-component  = gutter , INDENT(0) , kind , SP , name , [ anchor ] , NL ,
-             { comp-line } ;
-kind       = "class" | "interface" | "module" | "record" | "enum" | "external" ;
-comp-line  = gutter , INDENT(2) , ( string | needs | member ) ;
-needs      = "needs" , SP , params ;
-
-member     = [ "private" , SP ] , ( fn-decl | const-decl | state-decl | type-decl ) ,
-             [ anchor ] , [ SP , "…" ] , NL , { body-line } ;
-fn-decl    = "fn" , SP , name , "(" , [ params ] , ")" , [ SP , "->" , SP , type ] ;
-const-decl = "const" , SP , name , [ ":" , SP , type ] , [ SP , "=" , SP , text ] ;
-state-decl = "state" , SP , name , ":" , SP , type , { "," , SP , name , ":" , SP , type } ;
-type-decl  = "type" , SP , name , SP , "=" , SP , type ;
-
-body-line  = gutter , INDENT(4 + 2k) , ( string | step | effects | elides | "…" ) , [ comment ] , NL ;
-effects    = "effects:" , SP , ( "none" | effect , { "," , SP , effect } ) ;
-elides     = "elides:" , SP , text ;
-anchor     = SP , "@" , SP , ( path | ":" , range | path , ":" , range ) ;
-gutter     = ( "+" | "-" | "~" | " " ) , " " ;
-comment    = "#" , text ;
+```klar
+-     changes recentOrders · depends on time
+      writes db
 ```
 
-## 14. Open questions
+## 10. Context
 
-- **Changed lines inside an unchanged block.** Is `-` then `+` enough, or should Klar have a compact "was" form, such as `set tokens = x   # was: y`?
-- **Generics and overloads.** Should Klar show overloads as separate members, or as one member with alternatives?
-- **Concurrency.** Are `spawn` and `waits` enough to describe channels, actors and locks, or does Klar need a `lock` step?
-- **Prose quality.** Can a linter usefully flag vague prose steps ("handle the data")?
+Unchanged functions that the change connects to can be listed with their signature and `…`, so the document reads as a whole:
+
+```klar
+  class Router
+    use(step) …
+    handle(request) → response …
+```
+
+## 11. Leaving things out
+
+Klar leaves things out on purpose: logging, metrics, tracing, input parsing, type conversions, and passing errors up to the caller. A function can say what it left out with an `omits` line in its footer:
+
+```klar
+      writes db · fails NotFound
+      omits logging, retries
+```
+
+An `…` on its own line marks a left-out stretch of steps, optionally with a comment:
+
+```klar
+      …                       # parse and normalise headers
+```
+
+Anything that changes what a caller can observe must not be left out. If a check decides whether a request succeeds, it's a step.
+
+## 12. Language neutrality
+
+Klar describes what happens, not how a language makes it happen. Each mechanism below maps to a single Klar form:
+
+| What the code does | TypeScript / JS | Go | Python | Rust / Swift | Klar |
+|---|---|---|---|---|---|
+| Wait for a result | `await`, promises | blocking call, channel receive | `await` | `.await`, `async let` | `Wait for` |
+| Do things at the same time | `Promise.all` | goroutines and `WaitGroup` | `asyncio.gather` | `join!`, task groups | `Wait for all:` |
+| Fail | `throw` | `return err` | `raise` | `Err(…)`, `throw` | `Fail` |
+| No value | `null`, `undefined` | `nil` | `None` | `None`, `nil` | `missing` |
+| Pass an error up | `try` / `catch` and rethrow | `if err != nil { return err }` | `try` / `except` and re-raise | `?`, `try` | left out (§ 11) |
+| Function as a value | callbacks, closures | function values | lambdas | closures | described in the signature (§ 6) |
+
+Words that belong to a framework or pattern, such as *middleware*, *handler*, *hook*, *reducer* or *controller*, may appear only as names taken from the code. Klar never relies on the reader knowing what they mean.
+
+## 13. Highlighting
+
+Renderers and editors colour Klar with these token classes:
+
+| Class | Covers |
+|---|---|
+| control | `If`, `Else`, `Else if`, `Depending on`, `When`, `For each`, `While`, `Repeat up to`, `Skip`, `Stop`, `Wait for`, `Wait for all`, `Return`, `Fail` |
+| declaration | `class`, `module`, `interface`, `record`, `enum`, `external`, `needs`, `state`, `const`, `private`, `klar`, `change` |
+| name | names from the code: components, members, inputs and bound names |
+| call | a call that the graph connects to a function (§ 7.2) |
+| verb | the verbs of § 7.1 at the start of a step |
+| value | numbers, text, named outcomes |
+| operator | § 7.5 |
+| effect | the effect words of § 9 and § 11 |
+| change | the gutter marks of § 3 |
+
+Names are highlighted only when something defines them: the graph, a signature, `needs`, `state`, or a binding. Renderers shouldn't guess from capitalisation alone. A renderer with the graph should make calls into links to the function they reach.
+
+## 14. Conformance
+
+A **conformant Klar 0.2 document**:
+
+1. Starts with `klar 0.2`.
+2. Gives every line a two-character gutter and uses two-space indentation.
+3. Ends every line that opens a block with a colon, and puts no conditions inside sentences.
+4. Starts every step with a verb from § 7.1, a call, a control word, or a binding (`name = …`).
+5. Gives every added or changed function an effects footer.
+
+A **conformant producer** (a person, tool or agent writing Klar) also:
+
+6. Keeps the code's names.
+7. Writes a call, not prose, whenever a step uses another function in the graph.
+8. Leaves out nothing that changes what a caller can observe (§ 11).
+9. Keeps functions short. About 10 steps is the guideline; a longer function is described in larger steps, not line by line.
+
+## 15. Grammar
+
+Informal and line-based. `INDENT(n)` is `n` spaces after the gutter.
+
+```ebnf
+document    = version , [ change ] , { comment | blank | component } ;
+version     = gutter , "klar 0.2" , NL ;
+change      = gutter , "change" , SP , text , NL ;
+
+component   = gutter , INDENT(0) , kind , SP , Name , NL ,
+              { needs | state | const | function } ;
+kind        = "class" | "interface" | "module" | "record" | "enum" | "external" ;
+needs       = gutter , INDENT(2) , "needs" , SP , names , NL ;
+state       = gutter , INDENT(2) , "state" , SP , name , " = " , phrase , NL ;
+const       = gutter , INDENT(2) , "const" , SP , NAME , [ " = " , phrase ] , NL , { detail } ;
+
+function    = gutter , INDENT(2) , signature , ( SP , "…" , NL | NL , body ) ;
+signature   = [ "private" , SP ] , name , "(" , [ inputs ] , ")" , [ SP , "→" , SP , result ] ;
+body        = { step-line } , [ blank , footer ] ;
+step-line   = gutter , INDENT(4 + 2k) , ( step | opener ) , [ comment ] , NL ;
+opener      = control-head , ":" ;            (* opens a block *)
+step        = [ name , " = " ] , ( verb-step | call | wait | expression )
+            | "Return" , [ SP , phrase ] | "Fail" , SP , Name , [ "(" , args , ")" ]
+            | "Skip" | "Stop" | "…" ;
+footer      = { gutter , INDENT(4) , effect , { " · " , effect } , NL } ;
+gutter      = ( "+" | "-" | "~" | " " ) , " " ;
+comment     = "#" , text ;
+```
+
+## 16. Open questions
+
+- **Mapping detail in `create … from …`.** `create Contact from row` hides how fields map. That's usually fine for review, but when the mapping *is* the change it should be written out as `set` lines. Should Klar require that, or leave it to the producer?
+- **Locks and channels.** Are `Wait for` and `Wait for all:` enough for code built on locks, channels or actors, or does Klar need words for them?
+- **Linting.** The verb list, banned words and block rules can all be checked mechanically. Should a linter ship with the spec?
+- **Very small functions.** Should a function whose whole body is one call be allowed on a single line: `secondsUntilNext() → (1 − tokens) ÷ refillPerSecond`?

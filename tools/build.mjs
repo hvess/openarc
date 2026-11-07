@@ -36,7 +36,6 @@ for (const c of graph.components) {
     const km = kc?.members.get(m.name);
     if (km) {
       m.klar ??= km.lines.join("\n");
-      if (km.doc) m.summary ??= km.doc;
       if (km.effects) m.effects ??= km.effects;
       if (km.baseEffects) m.baseEffects ??= km.baseEffects;
     } else if (m.status !== "context") {
@@ -82,8 +81,9 @@ function hydrate(anchor, treeRoot, componentFile, id) {
   anchor.code ??= lines.slice(a - 1, b).join("\n");
 }
 
-// A deliberately small reader for Klar 0.1 documents: enough to pull out each
-// component's header and each member's block. Not a validating parser.
+// A deliberately small reader for Klar 0.2 documents: enough to pull out each
+// component's header and each member's block, and the effects footer that
+// follows a blank line in a member. Not a validating parser.
 function parseKlar(text) {
   const comps = new Map();
   let comp = null, member = null;
@@ -91,7 +91,7 @@ function parseKlar(text) {
     const body = raw.slice(2);
     const content = body.trim();
     const indent = body.length - body.trimStart().length;
-    if (!content) { member = null; continue; }
+    if (!content) { if (member) member.lines.push(""); continue; }
     if (indent === 0) {
       const m = content.match(/^(class|module|interface|record|enum|external)\s+([\w.]+)/);
       comp = m ? { name: m[2], header: [raw], doc: null, members: new Map() } : null;
@@ -101,26 +101,28 @@ function parseKlar(text) {
     }
     if (!comp) continue;
     if (indent === 2) {
-      const m = content.match(/^(?:private\s+)?(fn|const|state|type)\s+([\w.]+)/);
-      if (m) {
-        member = { name: m[2], lines: [dedent(raw)], doc: null, effects: null, baseEffects: null };
-        comp.members.set(m[2], member);
-        continue;
-      }
-      member = null;
-      if (content.startsWith('"') && !comp.doc) comp.doc = content.slice(1, -1);
-      comp.header.push(raw);
+      if (content.startsWith("needs ")) { comp.header.push(raw); member = null; continue; }
+      const m = content.match(/^(?:private\s+)?(?:(const|state)\s+)?([A-Za-z_][\w.]*)/);
+      if (!m) { member = null; continue; }
+      if (m[1] === "state") comp.header.push(raw);
+      member = { name: m[2], lines: [dedent(raw)] };
+      comp.members.set(m[2], member);
       continue;
     }
-    if (!member) continue;
-    member.lines.push(dedent(raw));
-    if (content.startsWith('"') && !member.doc && member.lines.length === 2) member.doc = content.slice(1, -1);
-    const eff = content.match(/^effects:\s*(.*)$/);
-    if (eff) {
-      const list = eff[1] === "none" ? [] : eff[1].split(",").map((s) => s.trim()).filter(Boolean);
-      if (raw[0] === "-") member.baseEffects = list;
-      else member.effects = list;
+    if (member) member.lines.push(dedent(raw));
+  }
+  for (const c of comps.values()) for (const m of c.members.values()) {
+    while (m.lines.length && !m.lines.at(-1).trim()) m.lines.pop();
+    const blank = m.lines.findIndex((l) => !l.trim());
+    if (blank < 0) continue;
+    const now = [], was = [];
+    for (const l of m.lines.slice(blank + 1)) {
+      const items = l.slice(2).split("·").map((s) => s.trim()).filter((s) => s && s !== "no effects");
+      if (l[0] !== "+") was.push(...items);
+      if (l[0] !== "-") now.push(...items);
     }
+    m.effects = now;
+    if (now.join() !== was.join()) m.baseEffects = was;
   }
   return comps;
 }

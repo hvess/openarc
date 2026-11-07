@@ -30,7 +30,7 @@
           "name": "buildServer",
           "kind": "function",
           "status": "changed",
-          "signature": "(clock: Clock = systemClock) -> Router",
+          "signature": "(clock = systemClock) → router",
           "source": {
             "lines": [
               8,
@@ -47,8 +47,8 @@
             "file": "src/server.ts",
             "code": "export function buildServer(): Router {\n  const router = new Router();\n  router.use(requireAuth);\n  router.get(\"/orders\", listOrders);\n  router.post(\"/orders\", createOrder);\n  return router;\n}"
           },
-          "klar": "~ fn buildServer(clock: Clock = systemClock) -> Router @ :8-16\n    \"Wire the router: authentication, then rate limiting, then the order routes.\"\n    let router = new Router\n+   let limiter = new RateLimiter(clock)\n    router.use(auth.requireAuth)\n+   router.use(limits.rateLimit(limiter))\n    router.get(\"/orders\", orders.listOrders)\n    router.post(\"/orders\", orders.createOrder)\n    return router\n    effects: none",
           "summary": "Wire the router: authentication, then rate limiting, then the order routes.",
+          "klar": "~ buildServer(clock = systemClock) → router\n    router = create Router\n+   limiter = create RateLimiter(clock)\n    router.use(auth.requireAuth)\n+   router.use(limits.rateLimit(limiter))\n    router.get(\"/orders\", orders.listOrders)\n    router.post(\"/orders\", orders.createOrder)\n    Return router\n\n    no effects",
           "effects": []
         }
       ]
@@ -67,7 +67,7 @@
           "name": "use",
           "kind": "function",
           "status": "context",
-          "signature": "(mw: Middleware)",
+          "signature": "(step)",
           "summary": "Append a middleware to the chain.",
           "source": {
             "lines": [
@@ -77,14 +77,14 @@
             "file": "src/router.ts",
             "code": "  use(mw: Middleware): void {\n    this.middleware.push(mw);\n  }"
           },
-          "klar": "  fn use(mw: Middleware) @ :18-20 …"
+          "klar": "  use(step) …"
         },
         {
           "id": "Router.handle",
           "name": "handle",
           "kind": "function",
           "status": "context",
-          "signature": "(req: Request) -> Response",
+          "signature": "(request) → response",
           "summary": "Find the route for a request and run it through every middleware in order.",
           "source": {
             "lines": [
@@ -94,7 +94,7 @@
             "file": "src/router.ts",
             "code": "  async handle(req: Request): Promise<Response> {\n    const route = this.routes.get(`${req.method} ${req.path}`);\n    if (!route) return { status: 404 };\n    const chain = this.middleware.reduceRight<Handler>((next, mw) => (r) => mw(r, next), route);\n    return chain(req);\n  }"
           },
-          "klar": "  fn handle(req: Request) -> Response @ :30-35 …"
+          "klar": "  handle(request) → response …"
         }
       ]
     },
@@ -111,7 +111,7 @@
           "name": "requireAuth",
           "kind": "function",
           "status": "context",
-          "signature": "(req: Request, next: Handler) -> Response",
+          "signature": "(request, next) → response",
           "summary": "Reject requests without a valid bearer token; attach the user otherwise.",
           "source": {
             "lines": [
@@ -121,7 +121,7 @@
             "file": "src/auth.ts",
             "code": "export const requireAuth: Middleware = async (req, next) => {\n  const header = req.headers[\"authorization\"];\n  if (!header?.startsWith(\"Bearer \")) return { status: 401 };\n  const user = await verifyToken(header.slice(7));\n  if (!user) return { status: 401 };\n  req.user = user;\n  return next(req);\n};"
           },
-          "klar": "  fn requireAuth(req: Request, next: Handler) -> Response @ :4-11 …"
+          "klar": "  requireAuth(request, next = rest of the chain) → response …"
         }
       ]
     },
@@ -138,7 +138,7 @@
           "name": "rateLimit",
           "kind": "function",
           "status": "added",
-          "signature": "(limiter: RateLimiter) -> Middleware",
+          "signature": "(limiter) → request step",
           "source": {
             "lines": [
               4,
@@ -147,8 +147,8 @@
             "file": "src/limits/middleware.ts",
             "code": "export function rateLimit(limiter: RateLimiter): Middleware {\n  return async (req, next) => {\n    const user = req.user;\n    if (!user) return next(req);\n    const decision = limiter.check(user.id, user.plan);\n    if (!decision.allowed) {\n      return { status: 429, headers: { \"retry-after\": String(decision.retryAfter) } };\n    }\n    return next(req);\n  };\n}"
           },
-          "klar": "  fn rateLimit(limiter: RateLimiter) -> Middleware @ :4-14\n    \"Build middleware that turns a client away with 429 once their allowance runs out.\"\n    return fn (req, next):\n      if req.user is missing\n        return next(req)                      # unauthenticated requests are not limited here\n      let decision = limiter.check(req.user.id, req.user.plan)\n      if not decision.allowed\n        return 429, header retry-after = decision.retryAfter\n      return next(req)\n    effects: none",
-          "summary": "Build middleware that turns a client away with 429 once their allowance runs out.",
+          "summary": "Build a request step that turns a client away with 429 once their allowance runs out.",
+          "klar": "  rateLimit(limiter) → request step(request, next = rest of the chain)\n    If request has no user:\n      Return next(request)\n    decision = limiter.check(user.id, user.plan)\n    If decision is denied:\n      Return 429 + retry-after = decision.retryAfter\n    Return next(request)\n\n    no effects",
           "effects": []
         }
       ]
@@ -166,7 +166,7 @@
           "name": "buckets",
           "kind": "state",
           "status": "added",
-          "signature": ": Map<ClientId, TokenBucket>",
+          "signature": "= one TokenBucket per client",
           "summary": "One bucket per client ever seen; never evicted.",
           "source": {
             "lines": [
@@ -176,14 +176,14 @@
             "file": "src/limits/rate-limiter.ts",
             "code": "  private buckets = new Map<string, TokenBucket>();"
           },
-          "klar": "  state buckets: Map<ClientId, TokenBucket> @ :9   # one per client ever seen; never evicted"
+          "klar": "  state buckets = one TokenBucket per client, never removed"
         },
         {
           "id": "RateLimiter.check",
           "name": "check",
           "kind": "function",
           "status": "added",
-          "signature": "(clientId: Text, plan: Plan) -> Decision",
+          "signature": "(client, plan) → allowed | denied",
           "source": {
             "lines": [
               13,
@@ -192,11 +192,11 @@
             "file": "src/limits/rate-limiter.ts",
             "code": "  check(clientId: string, plan: Plan): Decision {\n    const now = this.clock.now();\n    const bucket = this.bucketFor(clientId, plan, now);\n    bucket.refill(now);\n    if (bucket.tryTake()) return { allowed: true };\n    return { allowed: false, retryAfter: Math.ceil(bucket.secondsUntilNext()) };\n  }"
           },
-          "klar": "  fn check(clientId: Text, plan: Plan) -> Decision @ :13-19\n    \"Spend one token for this client, or say how many seconds until one is available.\"\n    let now = clock.now()\n    let bucket = bucketFor(clientId, plan, now)\n    bucket.refill(now)\n    if bucket.tryTake()\n      return allowed\n    return denied, retryAfter = ceil(bucket.secondsUntilNext())\n    effects: time, mutates buckets",
           "summary": "Spend one token for this client, or say how many seconds until one is available.",
+          "klar": "  check(client, plan) → allowed | denied\n    now = clock.now()\n    bucket = bucketFor(client, plan, now)\n    bucket.refill(now)\n    taken = bucket.tryTake()\n    If taken:\n      Return allowed\n    Return denied + retryAfter = bucket.secondsUntilNext(), rounded up\n\n    changes buckets · depends on time",
           "effects": [
-            "time",
-            "mutates buckets"
+            "changes buckets",
+            "depends on time"
           ]
         },
         {
@@ -205,7 +205,7 @@
           "kind": "function",
           "status": "added",
           "visibility": "private",
-          "signature": "(clientId: Text, plan: Plan, now: Time) -> TokenBucket",
+          "signature": "(client, plan, now) → bucket",
           "source": {
             "lines": [
               21,
@@ -214,15 +214,15 @@
             "file": "src/limits/rate-limiter.ts",
             "code": "  private bucketFor(clientId: string, plan: Plan, now: number): TokenBucket {\n    let bucket = this.buckets.get(clientId);\n    if (!bucket) {\n      const { burst, perSecond } = LIMITS[plan];\n      bucket = new TokenBucket(burst, perSecond, now);\n      this.buckets.set(clientId, bucket);\n    }\n    return bucket;\n  }"
           },
-          "klar": "  private fn bucketFor(clientId: Text, plan: Plan, now: Time) -> TokenBucket @ :21-29\n    \"Find the client's bucket, creating a full one from their plan's limits the first time.\"\n    if buckets has no entry for clientId\n      let { burst, perSecond } = config.LIMITS[plan]\n      set buckets[clientId] = new TokenBucket(burst, perSecond, now)\n    return buckets[clientId]\n    effects: mutates buckets",
-          "summary": "Find the client's bucket, creating a full one from their plan's limits the first time.",
+          "summary": "Find the client’s bucket, creating a full one from their plan’s limits the first time.",
+          "klar": "  private bucketFor(client, plan, now) → bucket\n    bucket = get buckets[client]\n    If bucket is missing:\n      limits = config.LIMITS[plan]\n      bucket = create TokenBucket(limits.burst, limits.perSecond, now)\n      add bucket to buckets for client\n    Return bucket\n\n    changes buckets",
           "effects": [
-            "mutates buckets"
+            "changes buckets"
           ]
         }
       ],
       "summary": "Gives each client a token bucket sized by their plan.",
-      "klar": "+ class RateLimiter @ src/limits/rate-limiter.ts\n    \"Gives each client a token bucket sized by their plan.\"\n    needs clock: Clock"
+      "klar": "+ class RateLimiter\n    needs clock\n    state buckets = one TokenBucket per client, never removed"
     },
     {
       "id": "TokenBucket",
@@ -237,7 +237,7 @@
           "name": "refill",
           "kind": "function",
           "status": "added",
-          "signature": "(now: Time)",
+          "signature": "(now)",
           "source": {
             "lines": [
               10,
@@ -246,10 +246,10 @@
             "file": "src/limits/token-bucket.ts",
             "code": "  refill(now: number): void {\n    const elapsed = (now - this.updatedAt) / 1000;\n    this.tokens = Math.min(this.capacity, this.tokens + elapsed * this.refillPerSecond);\n    this.updatedAt = now;\n  }"
           },
-          "klar": "  fn refill(now: Time) @ :10-14\n    \"Add the tokens earned since the last refill, never exceeding capacity.\"\n    set tokens = min(capacity, tokens + seconds since updatedAt × refillPerSecond)\n    set updatedAt = now\n    effects: mutates self",
           "summary": "Add the tokens earned since the last refill, never exceeding capacity.",
+          "klar": "  refill(now)\n    elapsed = now − updatedAt, in seconds\n    set tokens = min(capacity, tokens + elapsed × refillPerSecond)\n    set updatedAt = now\n\n    changes tokens, updatedAt",
           "effects": [
-            "mutates self"
+            "changes tokens, updatedAt"
           ]
         },
         {
@@ -257,7 +257,7 @@
           "name": "tryTake",
           "kind": "function",
           "status": "added",
-          "signature": "() -> Bool",
+          "signature": "() → yes | no",
           "source": {
             "lines": [
               16,
@@ -266,10 +266,10 @@
             "file": "src/limits/token-bucket.ts",
             "code": "  tryTake(): boolean {\n    if (this.tokens < 1) return false;\n    this.tokens -= 1;\n    return true;\n  }"
           },
-          "klar": "  fn tryTake() -> Bool @ :16-20\n    \"Take one token if there is a whole one left.\"\n    if tokens < 1\n      return false\n    set tokens = tokens - 1\n    return true\n    effects: mutates self",
-          "summary": "Take one token if there is a whole one left.",
+          "summary": "Take one token if a whole one is left.",
+          "klar": "  tryTake() → yes | no\n    If tokens < 1:\n      Return no\n    set tokens = tokens − 1\n    Return yes\n\n    changes tokens",
           "effects": [
-            "mutates self"
+            "changes tokens"
           ]
         },
         {
@@ -277,7 +277,7 @@
           "name": "secondsUntilNext",
           "kind": "function",
           "status": "added",
-          "signature": "() -> Num",
+          "signature": "() → seconds",
           "source": {
             "lines": [
               22,
@@ -286,13 +286,13 @@
             "file": "src/limits/token-bucket.ts",
             "code": "  secondsUntilNext(): number {\n    return this.tokens >= 1 ? 0 : (1 - this.tokens) / this.refillPerSecond;\n  }"
           },
-          "klar": "  fn secondsUntilNext() -> Num @ :22-24\n    \"How long until a whole token is available; zero if one already is.\"\n    if tokens ≥ 1\n      return 0\n    return (1 - tokens) / refillPerSecond\n    effects: none",
           "summary": "How long until a whole token is available; zero if one already is.",
+          "klar": "  secondsUntilNext() → seconds\n    If tokens ≥ 1:\n      Return 0\n    Return (1 − tokens) ÷ refillPerSecond\n\n    no effects",
           "effects": []
         }
       ],
       "summary": "An allowance that holds up to capacity tokens and regains refillPerSecond every second.",
-      "klar": "+ class TokenBucket @ src/limits/token-bucket.ts\n    \"An allowance that holds up to capacity tokens and regains refillPerSecond every second.\"\n    needs capacity: Int, refillPerSecond: Num, now: Time"
+      "klar": "+ class TokenBucket\n    needs capacity, refillPerSecond, now\n    state tokens = capacity at start\n    state updatedAt = now at start"
     },
     {
       "id": "Clock",
@@ -307,7 +307,7 @@
           "name": "now",
           "kind": "function",
           "status": "added",
-          "signature": "() -> Time",
+          "signature": "() → time in ms",
           "summary": "The current time in milliseconds.",
           "source": {
             "lines": [
@@ -317,14 +317,14 @@
             "file": "src/clock.ts",
             "code": "  now(): number;"
           },
-          "klar": "  fn now() -> Time @ :2"
+          "klar": "  now() → time in ms"
         },
         {
           "id": "Clock.systemClock",
           "name": "systemClock",
           "kind": "const",
           "status": "added",
-          "signature": ": Clock",
+          "signature": "= reads the system time",
           "summary": "Default implementation backed by the wall clock.",
           "source": {
             "lines": [
@@ -334,11 +334,10 @@
             "file": "src/clock.ts",
             "code": "export const systemClock: Clock = { now: () => Date.now() };"
           },
-          "klar": "  const systemClock: Clock = the wall clock @ :5"
+          "klar": "  const systemClock = Clock that reads the system time"
         }
       ],
-      "summary": "Where the current time comes from; injected so rate limits can be tested.",
-      "klar": "+ interface Clock @ src/clock.ts\n    \"Where the current time comes from; injected so rate limits can be tested.\""
+      "summary": "Where the current time comes from; injected so rate limits can be tested."
     },
     {
       "id": "config",
@@ -353,7 +352,7 @@
           "name": "LIMITS",
           "kind": "const",
           "status": "added",
-          "signature": ": Map<Plan, { burst, perSecond }>",
+          "signature": "= burst and refill rate per plan",
           "source": {
             "lines": [
               4,
@@ -362,8 +361,8 @@
             "file": "src/config.ts",
             "code": "export const LIMITS: Record<Plan, { burst: number; perSecond: number }> = {\n  free: { burst: 20, perSecond: 1 },\n  pro: { burst: 100, perSecond: 10 },\n};"
           },
-          "klar": "+ const LIMITS: Map<Plan, { burst: Int, perSecond: Num }> @ :4-7\n    \"How many requests each plan may burst, and how fast that allowance refills.\"\n    free: burst 20, then 1 per second\n    pro:  burst 100, then 10 per second",
-          "summary": "How many requests each plan may burst, and how fast that allowance refills."
+          "summary": "How many requests each plan may burst, and how fast that allowance refills.",
+          "klar": "+ const LIMITS = burst size and refill rate for each plan\n    free: burst 20, then 1 per second\n    pro: burst 100, then 10 per second"
         },
         {
           "id": "config.MAX_ORDERS_PER_MINUTE",
@@ -380,7 +379,7 @@
             "file": "src/config.ts",
             "code": "export const MAX_ORDERS_PER_MINUTE = 5;"
           },
-          "klar": "- const MAX_ORDERS_PER_MINUTE = 5 @ :2"
+          "klar": "- const MAX_ORDERS_PER_MINUTE = 5"
         }
       ]
     },
@@ -397,7 +396,7 @@
           "name": "recentOrders",
           "kind": "state",
           "status": "removed",
-          "signature": ": Map<UserId, List<Time>>",
+          "signature": "= order times per user",
           "summary": "Timestamps of each user's recent orders.",
           "base": {
             "lines": [
@@ -407,14 +406,14 @@
             "file": "src/orders.ts",
             "code": "const recentOrders = new Map<string, number[]>();"
           },
-          "klar": "- state recentOrders: Map<UserId, List<Time>> @ :5"
+          "klar": "- state recentOrders = order times for each user"
         },
         {
           "id": "orders.listOrders",
           "name": "listOrders",
           "kind": "function",
           "status": "context",
-          "signature": "(req: Request) -> Response",
+          "signature": "(request) → 200 + orders",
           "summary": "Return the signed-in user's orders.",
           "source": {
             "lines": [
@@ -424,14 +423,14 @@
             "file": "src/orders.ts",
             "code": "export const listOrders: Handler = async (req) => {\n  const orders = await db.orders.forUser(req.user!.id);\n  return { status: 200, body: orders };\n};"
           },
-          "klar": "  fn listOrders(req: Request) -> Response @ :4-7 …"
+          "klar": "  listOrders(request) → 200 + orders …"
         },
         {
           "id": "orders.createOrder",
           "name": "createOrder",
           "kind": "function",
           "status": "changed",
-          "signature": "(req: Request) -> Response",
+          "signature": "(request) → 201 + order",
           "source": {
             "lines": [
               9,
@@ -448,18 +447,19 @@
             "file": "src/orders.ts",
             "code": "export const createOrder: Handler = async (req) => {\n  const userId = req.user!.id;\n  const now = Date.now();\n  const recent = (recentOrders.get(userId) ?? []).filter((t) => now - t < 60_000);\n  if (recent.length >= MAX_ORDERS_PER_MINUTE) return { status: 429 };\n  recentOrders.set(userId, [...recent, now]);\n  const order = await db.orders.insert(userId, req.body);\n  return { status: 201, body: order };\n};"
           },
-          "klar": "~ fn createOrder(req: Request) -> Response @ :9-12\n    \"Store a new order for the signed-in user.\"\n-   drop this user's order times older than one minute\n-   if they placed MAX_ORDERS_PER_MINUTE or more\n-     return 429\n-   record now in recentOrders[user]\n    let order = db.orders.insert(req.user.id, req.body)\n    return 201 with order\n-   effects: time, mutates recentOrders, io db\n+   effects: io db",
           "summary": "Store a new order for the signed-in user.",
+          "klar": "~ createOrder(request) → 201 + order\n-   remove times older than 1 min from recentOrders[user]\n-   If recentOrders[user] has ≥ MAX_ORDERS_PER_MINUTE entries:\n-     Return 429\n-   add now to recentOrders[user]\n    order = Wait for db.orders.insert(user.id, request.body)\n    Return 201 + order\n\n-   changes recentOrders · depends on time\n    writes db",
           "effects": [
-            "io db"
+            "writes db"
           ],
           "baseEffects": [
-            "time",
-            "mutates recentOrders",
-            "io db"
+            "changes recentOrders",
+            "depends on time",
+            "writes db"
           ]
         }
-      ]
+      ],
+      "klar": "~ module orders\n-   state recentOrders = order times for each user"
     },
     {
       "id": "db",
@@ -474,7 +474,7 @@
           "name": "orders.insert",
           "kind": "function",
           "status": "context",
-          "signature": "(userId: Text, order: Any) -> Order",
+          "signature": "(user, order) → order",
           "summary": "Persist a new order.",
           "source": {
             "lines": [
@@ -484,7 +484,7 @@
             "file": "src/db.ts",
             "code": "    async insert(userId: string, order: unknown): Promise<unknown> {\n      return { id: crypto.randomUUID(), userId, ...(order as object) };\n    },"
           },
-          "klar": "  fn orders.insert(userId: Text, order: Any) -> Order @ :6-8 …"
+          "klar": "  orders.insert(user, order) → order …"
         }
       ]
     }

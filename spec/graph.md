@@ -20,7 +20,7 @@ A graph is usually written as `<name>.openarc.json` or `graph.json`.
 ## 1. Principles
 
 1. **The graph is about the change.** It holds everything the change added, changed or removed, plus enough unchanged **context** to show where the new pieces connect, usually one hop away. It is not a map of the whole codebase.
-2. **Structure is checkable and meaning is labelled.** Components, members, edges and source lines can be produced and checked mechanically. Summaries, Klar and notes are written by a person or an agent. Where an edge is asserted rather than resolved from the code, the graph says so (§ 5.1).
+2. **Structure is checkable and meaning is labelled.** Components, members, edges and source lines can be produced and checked mechanically. Summaries, Klar and notes are written by a person or an agent. Where an edge is asserted rather than resolved from the code, the graph says so (§ 6).
 3. **Klar first, code second.** Every member carries its Klar. Raw code is optional and exists so the reader can verify the Klar.
 4. **Renderers are interchangeable.** The bundled viewer is one renderer. A graph must make sense without it.
 
@@ -76,11 +76,11 @@ A component's status summarises its members. A component is `changed` if it is n
 | `name` | yes | Display name |
 | `kind` | yes | `function`, `const`, `state` or `type` |
 | `status` | yes | § 3 |
-| `signature` | no | Parameters and result in Klar notation, such as `(clientId: Text, plan: Plan) -> Decision` |
+| `signature` | no | Inputs and result as in a [Klar signature](klar.md#6-signatures), such as `(client, plan) → allowed | denied` |
 | `visibility` | no | `public` (default) or `private` |
-| `summary` | no* | One sentence saying what the member does. *Required for added and changed functions |
+| `summary` | no* | One sentence saying what the member does. Klar has no description lines, so this is where it lives. *Required for added and changed functions |
 | `klar` | no* | The member's Klar block, gutter included. *Required for added and changed functions |
-| `effects` | no | Effects after the change, as in [Klar § 9](klar.md#9-effects) (`["time", "mutates buckets"]`). An empty array means pure |
+| `effects` | no | Effects after the change, as in [Klar § 9](klar.md#9-effects) (`["changes buckets", "depends on time"]`). An empty array means no effects |
 | `baseEffects` | no | Effects before the change, when they differ |
 | `source` | no* | Where the member is in the head version: `{ "file"?, "lines": [start, end], "code"? }`. *Required unless `removed` |
 | `base` | no | The same, for the base version. Required for `removed`, recommended for `changed` |

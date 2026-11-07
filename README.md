@@ -15,7 +15,7 @@ The raw code is still there for checking the Klar against it, one click away, bu
 
 | Path | |
 |---|---|
-| [`spec/klar.md`](spec/klar.md) | **Klar 0.1**: the language for describing code in simpler terms |
+| [`spec/klar.md`](spec/klar.md) | **Klar 0.2**: the language for describing code in simpler terms |
 | [`spec/graph.md`](spec/graph.md), [`spec/graph.schema.json`](spec/graph.schema.json) | **OpenArc Graph 0.1**: the JSON format for a change's architecture |
 | [`viewer/index.html`](viewer/index.html) | A self-contained viewer: pan, zoom, flows, a function inspector |
 | [`tools/build.mjs`](tools/build.mjs) | Joins a graph, its Klar document and the source into a finished graph and viewer page |
@@ -43,10 +43,10 @@ code diff ──▶ structure ──────────▶ graph.json ─�
                          (Klar, summaries, flows, notes)
 ```
 
-**Structure** is mechanical and checkable: what was added, what calls what, and which lines each piece comes from. **Meaning** is written by an agent (Claude Code, Codex and others) and kept honest by the structure. Every Klar block points to the source lines it describes, and every edge that wasn't resolved from the code is marked as inferred.
+**Structure** is mechanical and checkable: what was added, what calls what, and which lines each piece comes from. **Meaning** is written by an agent (Claude Code, Codex and others) and kept honest by the structure. Every function in the graph points to the source lines its Klar describes, and every edge that wasn't resolved from the code is marked as inferred.
 
 In this first milestone the example is written by hand to pin down the formats. Extraction and the agent plugin come next.
 
 ## Status
 
-Early design. Both specs are 0.1 drafts and will change.
+Early design. Klar is at 0.2 and the graph format at 0.1; both are drafts and will change.

@@ -8,175 +8,577 @@
     "klar": "change.klar"
   },
   "groups": [
-    { "id": "src", "label": "src" },
-    { "id": "src/limits", "label": "src/limits" }
+    {
+      "id": "src",
+      "label": "src"
+    },
+    {
+      "id": "src/limits",
+      "label": "src/limits"
+    }
   ],
   "components": [
     {
-      "id": "server", "name": "server", "kind": "module", "status": "changed", "group": "src",
+      "id": "server",
+      "name": "server",
+      "kind": "module",
+      "status": "changed",
+      "group": "src",
       "file": "src/server.ts",
       "members": [
-        { "id": "server.buildServer", "name": "buildServer", "kind": "function", "status": "changed",
-          "signature": "(clock: Clock = systemClock) -> Router",
-          "source": { "lines": [8, 16] }, "base": { "lines": [5, 11] } }
+        {
+          "id": "server.buildServer",
+          "name": "buildServer",
+          "kind": "function",
+          "status": "changed",
+          "signature": "(clock = systemClock) → router",
+          "source": {
+            "lines": [
+              8,
+              16
+            ]
+          },
+          "base": {
+            "lines": [
+              5,
+              11
+            ]
+          },
+          "summary": "Wire the router: authentication, then rate limiting, then the order routes."
+        }
       ]
     },
     {
-      "id": "Router", "name": "Router", "kind": "class", "status": "context", "group": "src",
+      "id": "Router",
+      "name": "Router",
+      "kind": "class",
+      "status": "context",
+      "group": "src",
       "file": "src/router.ts",
       "summary": "Matches requests to routes and runs them through the middleware chain.",
       "members": [
-        { "id": "Router.use", "name": "use", "kind": "function", "status": "context",
-          "signature": "(mw: Middleware)", "summary": "Append a middleware to the chain.",
-          "source": { "lines": [18, 20] } },
-        { "id": "Router.handle", "name": "handle", "kind": "function", "status": "context",
-          "signature": "(req: Request) -> Response",
+        {
+          "id": "Router.use",
+          "name": "use",
+          "kind": "function",
+          "status": "context",
+          "signature": "(step)",
+          "summary": "Append a middleware to the chain.",
+          "source": {
+            "lines": [
+              18,
+              20
+            ]
+          }
+        },
+        {
+          "id": "Router.handle",
+          "name": "handle",
+          "kind": "function",
+          "status": "context",
+          "signature": "(request) → response",
           "summary": "Find the route for a request and run it through every middleware in order.",
-          "source": { "lines": [30, 35] } }
+          "source": {
+            "lines": [
+              30,
+              35
+            ]
+          }
+        }
       ]
     },
     {
-      "id": "auth", "name": "auth", "kind": "module", "status": "context", "group": "src",
+      "id": "auth",
+      "name": "auth",
+      "kind": "module",
+      "status": "context",
+      "group": "src",
       "file": "src/auth.ts",
       "members": [
-        { "id": "auth.requireAuth", "name": "requireAuth", "kind": "function", "status": "context",
-          "signature": "(req: Request, next: Handler) -> Response",
+        {
+          "id": "auth.requireAuth",
+          "name": "requireAuth",
+          "kind": "function",
+          "status": "context",
+          "signature": "(request, next) → response",
           "summary": "Reject requests without a valid bearer token; attach the user otherwise.",
-          "source": { "lines": [4, 11] } }
+          "source": {
+            "lines": [
+              4,
+              11
+            ]
+          }
+        }
       ]
     },
     {
-      "id": "limits", "name": "limits", "kind": "module", "status": "added", "group": "src/limits",
+      "id": "limits",
+      "name": "limits",
+      "kind": "module",
+      "status": "added",
+      "group": "src/limits",
       "file": "src/limits/middleware.ts",
       "members": [
-        { "id": "limits.rateLimit", "name": "rateLimit", "kind": "function", "status": "added",
-          "signature": "(limiter: RateLimiter) -> Middleware",
-          "source": { "lines": [4, 14] } }
+        {
+          "id": "limits.rateLimit",
+          "name": "rateLimit",
+          "kind": "function",
+          "status": "added",
+          "signature": "(limiter) → request step",
+          "source": {
+            "lines": [
+              4,
+              14
+            ]
+          },
+          "summary": "Build a request step that turns a client away with 429 once their allowance runs out."
+        }
       ]
     },
     {
-      "id": "RateLimiter", "name": "RateLimiter", "kind": "class", "status": "added", "group": "src/limits",
+      "id": "RateLimiter",
+      "name": "RateLimiter",
+      "kind": "class",
+      "status": "added",
+      "group": "src/limits",
       "file": "src/limits/rate-limiter.ts",
       "members": [
-        { "id": "RateLimiter.buckets", "name": "buckets", "kind": "state", "status": "added",
-          "signature": ": Map<ClientId, TokenBucket>",
+        {
+          "id": "RateLimiter.buckets",
+          "name": "buckets",
+          "kind": "state",
+          "status": "added",
+          "signature": "= one TokenBucket per client",
           "summary": "One bucket per client ever seen; never evicted.",
-          "source": { "lines": [9, 9] } },
-        { "id": "RateLimiter.check", "name": "check", "kind": "function", "status": "added",
-          "signature": "(clientId: Text, plan: Plan) -> Decision",
-          "source": { "lines": [13, 19] } },
-        { "id": "RateLimiter.bucketFor", "name": "bucketFor", "kind": "function", "status": "added",
+          "source": {
+            "lines": [
+              9,
+              9
+            ]
+          }
+        },
+        {
+          "id": "RateLimiter.check",
+          "name": "check",
+          "kind": "function",
+          "status": "added",
+          "signature": "(client, plan) → allowed | denied",
+          "source": {
+            "lines": [
+              13,
+              19
+            ]
+          },
+          "summary": "Spend one token for this client, or say how many seconds until one is available."
+        },
+        {
+          "id": "RateLimiter.bucketFor",
+          "name": "bucketFor",
+          "kind": "function",
+          "status": "added",
           "visibility": "private",
-          "signature": "(clientId: Text, plan: Plan, now: Time) -> TokenBucket",
-          "source": { "lines": [21, 29] } }
-      ]
+          "signature": "(client, plan, now) → bucket",
+          "source": {
+            "lines": [
+              21,
+              29
+            ]
+          },
+          "summary": "Find the client’s bucket, creating a full one from their plan’s limits the first time."
+        }
+      ],
+      "summary": "Gives each client a token bucket sized by their plan."
     },
     {
-      "id": "TokenBucket", "name": "TokenBucket", "kind": "class", "status": "added", "group": "src/limits",
+      "id": "TokenBucket",
+      "name": "TokenBucket",
+      "kind": "class",
+      "status": "added",
+      "group": "src/limits",
       "file": "src/limits/token-bucket.ts",
       "members": [
-        { "id": "TokenBucket.refill", "name": "refill", "kind": "function", "status": "added",
-          "signature": "(now: Time)", "source": { "lines": [10, 14] } },
-        { "id": "TokenBucket.tryTake", "name": "tryTake", "kind": "function", "status": "added",
-          "signature": "() -> Bool", "source": { "lines": [16, 20] } },
-        { "id": "TokenBucket.secondsUntilNext", "name": "secondsUntilNext", "kind": "function", "status": "added",
-          "signature": "() -> Num", "source": { "lines": [22, 24] } }
-      ]
+        {
+          "id": "TokenBucket.refill",
+          "name": "refill",
+          "kind": "function",
+          "status": "added",
+          "signature": "(now)",
+          "source": {
+            "lines": [
+              10,
+              14
+            ]
+          },
+          "summary": "Add the tokens earned since the last refill, never exceeding capacity."
+        },
+        {
+          "id": "TokenBucket.tryTake",
+          "name": "tryTake",
+          "kind": "function",
+          "status": "added",
+          "signature": "() → yes | no",
+          "source": {
+            "lines": [
+              16,
+              20
+            ]
+          },
+          "summary": "Take one token if a whole one is left."
+        },
+        {
+          "id": "TokenBucket.secondsUntilNext",
+          "name": "secondsUntilNext",
+          "kind": "function",
+          "status": "added",
+          "signature": "() → seconds",
+          "source": {
+            "lines": [
+              22,
+              24
+            ]
+          },
+          "summary": "How long until a whole token is available; zero if one already is."
+        }
+      ],
+      "summary": "An allowance that holds up to capacity tokens and regains refillPerSecond every second."
     },
     {
-      "id": "Clock", "name": "Clock", "kind": "interface", "status": "added", "group": "src",
+      "id": "Clock",
+      "name": "Clock",
+      "kind": "interface",
+      "status": "added",
+      "group": "src",
       "file": "src/clock.ts",
       "members": [
-        { "id": "Clock.now", "name": "now", "kind": "function", "status": "added",
-          "signature": "() -> Time", "summary": "The current time in milliseconds.",
-          "source": { "lines": [2, 2] } },
-        { "id": "Clock.systemClock", "name": "systemClock", "kind": "const", "status": "added",
-          "signature": ": Clock", "summary": "Default implementation backed by the wall clock.",
-          "source": { "lines": [5, 5] } }
-      ]
+        {
+          "id": "Clock.now",
+          "name": "now",
+          "kind": "function",
+          "status": "added",
+          "signature": "() → time in ms",
+          "summary": "The current time in milliseconds.",
+          "source": {
+            "lines": [
+              2,
+              2
+            ]
+          }
+        },
+        {
+          "id": "Clock.systemClock",
+          "name": "systemClock",
+          "kind": "const",
+          "status": "added",
+          "signature": "= reads the system time",
+          "summary": "Default implementation backed by the wall clock.",
+          "source": {
+            "lines": [
+              5,
+              5
+            ]
+          }
+        }
+      ],
+      "summary": "Where the current time comes from; injected so rate limits can be tested."
     },
     {
-      "id": "config", "name": "config", "kind": "module", "status": "changed", "group": "src",
+      "id": "config",
+      "name": "config",
+      "kind": "module",
+      "status": "changed",
+      "group": "src",
       "file": "src/config.ts",
       "members": [
-        { "id": "config.LIMITS", "name": "LIMITS", "kind": "const", "status": "added",
-          "signature": ": Map<Plan, { burst, perSecond }>",
-          "source": { "lines": [4, 7] } },
-        { "id": "config.MAX_ORDERS_PER_MINUTE", "name": "MAX_ORDERS_PER_MINUTE", "kind": "const", "status": "removed",
-          "signature": "= 5", "summary": "Per-user cap on order creation.",
-          "base": { "lines": [2, 2] } }
+        {
+          "id": "config.LIMITS",
+          "name": "LIMITS",
+          "kind": "const",
+          "status": "added",
+          "signature": "= burst and refill rate per plan",
+          "source": {
+            "lines": [
+              4,
+              7
+            ]
+          },
+          "summary": "How many requests each plan may burst, and how fast that allowance refills."
+        },
+        {
+          "id": "config.MAX_ORDERS_PER_MINUTE",
+          "name": "MAX_ORDERS_PER_MINUTE",
+          "kind": "const",
+          "status": "removed",
+          "signature": "= 5",
+          "summary": "Per-user cap on order creation.",
+          "base": {
+            "lines": [
+              2,
+              2
+            ]
+          }
+        }
       ]
     },
     {
-      "id": "orders", "name": "orders", "kind": "module", "status": "changed", "group": "src",
+      "id": "orders",
+      "name": "orders",
+      "kind": "module",
+      "status": "changed",
+      "group": "src",
       "file": "src/orders.ts",
       "members": [
-        { "id": "orders.recentOrders", "name": "recentOrders", "kind": "state", "status": "removed",
-          "signature": ": Map<UserId, List<Time>>", "summary": "Timestamps of each user's recent orders.",
-          "base": { "lines": [5, 5] } },
-        { "id": "orders.listOrders", "name": "listOrders", "kind": "function", "status": "context",
-          "signature": "(req: Request) -> Response", "summary": "Return the signed-in user's orders.",
-          "source": { "lines": [4, 7] } },
-        { "id": "orders.createOrder", "name": "createOrder", "kind": "function", "status": "changed",
-          "signature": "(req: Request) -> Response",
-          "source": { "lines": [9, 12] }, "base": { "lines": [12, 20] } }
+        {
+          "id": "orders.recentOrders",
+          "name": "recentOrders",
+          "kind": "state",
+          "status": "removed",
+          "signature": "= order times per user",
+          "summary": "Timestamps of each user's recent orders.",
+          "base": {
+            "lines": [
+              5,
+              5
+            ]
+          }
+        },
+        {
+          "id": "orders.listOrders",
+          "name": "listOrders",
+          "kind": "function",
+          "status": "context",
+          "signature": "(request) → 200 + orders",
+          "summary": "Return the signed-in user's orders.",
+          "source": {
+            "lines": [
+              4,
+              7
+            ]
+          }
+        },
+        {
+          "id": "orders.createOrder",
+          "name": "createOrder",
+          "kind": "function",
+          "status": "changed",
+          "signature": "(request) → 201 + order",
+          "source": {
+            "lines": [
+              9,
+              12
+            ]
+          },
+          "base": {
+            "lines": [
+              12,
+              20
+            ]
+          },
+          "summary": "Store a new order for the signed-in user."
+        }
       ]
     },
     {
-      "id": "db", "name": "db", "kind": "module", "status": "context", "group": "src",
+      "id": "db",
+      "name": "db",
+      "kind": "module",
+      "status": "context",
+      "group": "src",
       "file": "src/db.ts",
       "members": [
-        { "id": "db.orders.insert", "name": "orders.insert", "kind": "function", "status": "context",
-          "signature": "(userId: Text, order: Any) -> Order", "summary": "Persist a new order.",
-          "source": { "lines": [6, 8] } }
+        {
+          "id": "db.orders.insert",
+          "name": "orders.insert",
+          "kind": "function",
+          "status": "context",
+          "signature": "(user, order) → order",
+          "summary": "Persist a new order.",
+          "source": {
+            "lines": [
+              6,
+              8
+            ]
+          }
+        }
       ]
     }
   ],
   "edges": [
-    { "from": "server.buildServer", "to": "RateLimiter", "kind": "creates", "status": "added" },
-    { "from": "server.buildServer", "to": "limits.rateLimit", "kind": "calls", "status": "added" },
-    { "from": "server.buildServer", "to": "Router.use", "kind": "calls", "status": "context" },
-    { "from": "server.buildServer", "to": "Clock.systemClock", "kind": "reads", "status": "added" },
-    { "from": "Router.handle", "to": "auth.requireAuth", "kind": "calls", "status": "context",
-      "resolution": "inferred", "label": "middleware chain" },
-    { "from": "Router.handle", "to": "limits.rateLimit", "kind": "calls", "status": "added",
-      "resolution": "inferred", "label": "runs the middleware it returns" },
-    { "from": "Router.handle", "to": "orders.createOrder", "kind": "calls", "status": "context",
-      "resolution": "inferred", "label": "route table" },
-    { "from": "limits.rateLimit", "to": "RateLimiter.check", "kind": "calls", "status": "added" },
-    { "from": "RateLimiter.check", "to": "Clock.now", "kind": "calls", "status": "added", "resolution": "dispatch" },
-    { "from": "RateLimiter.check", "to": "RateLimiter.bucketFor", "kind": "calls", "status": "added" },
-    { "from": "RateLimiter.check", "to": "TokenBucket.refill", "kind": "calls", "status": "added" },
-    { "from": "RateLimiter.check", "to": "TokenBucket.tryTake", "kind": "calls", "status": "added" },
-    { "from": "RateLimiter.check", "to": "TokenBucket.secondsUntilNext", "kind": "calls", "status": "added" },
-    { "from": "RateLimiter.bucketFor", "to": "config.LIMITS", "kind": "reads", "status": "added" },
-    { "from": "RateLimiter.bucketFor", "to": "TokenBucket", "kind": "creates", "status": "added" },
-    { "from": "orders.createOrder", "to": "db.orders.insert", "kind": "calls", "status": "context" },
-    { "from": "orders.createOrder", "to": "config.MAX_ORDERS_PER_MINUTE", "kind": "reads", "status": "removed" },
-    { "from": "orders.createOrder", "to": "orders.recentOrders", "kind": "writes", "status": "removed" }
+    {
+      "from": "server.buildServer",
+      "to": "RateLimiter",
+      "kind": "creates",
+      "status": "added"
+    },
+    {
+      "from": "server.buildServer",
+      "to": "limits.rateLimit",
+      "kind": "calls",
+      "status": "added"
+    },
+    {
+      "from": "server.buildServer",
+      "to": "Router.use",
+      "kind": "calls",
+      "status": "context"
+    },
+    {
+      "from": "server.buildServer",
+      "to": "Clock.systemClock",
+      "kind": "reads",
+      "status": "added"
+    },
+    {
+      "from": "Router.handle",
+      "to": "auth.requireAuth",
+      "kind": "calls",
+      "status": "context",
+      "resolution": "inferred",
+      "label": "middleware chain"
+    },
+    {
+      "from": "Router.handle",
+      "to": "limits.rateLimit",
+      "kind": "calls",
+      "status": "added",
+      "resolution": "inferred",
+      "label": "runs the middleware it returns"
+    },
+    {
+      "from": "Router.handle",
+      "to": "orders.createOrder",
+      "kind": "calls",
+      "status": "context",
+      "resolution": "inferred",
+      "label": "route table"
+    },
+    {
+      "from": "limits.rateLimit",
+      "to": "RateLimiter.check",
+      "kind": "calls",
+      "status": "added"
+    },
+    {
+      "from": "RateLimiter.check",
+      "to": "Clock.now",
+      "kind": "calls",
+      "status": "added",
+      "resolution": "dispatch"
+    },
+    {
+      "from": "RateLimiter.check",
+      "to": "RateLimiter.bucketFor",
+      "kind": "calls",
+      "status": "added"
+    },
+    {
+      "from": "RateLimiter.check",
+      "to": "TokenBucket.refill",
+      "kind": "calls",
+      "status": "added"
+    },
+    {
+      "from": "RateLimiter.check",
+      "to": "TokenBucket.tryTake",
+      "kind": "calls",
+      "status": "added"
+    },
+    {
+      "from": "RateLimiter.check",
+      "to": "TokenBucket.secondsUntilNext",
+      "kind": "calls",
+      "status": "added"
+    },
+    {
+      "from": "RateLimiter.bucketFor",
+      "to": "config.LIMITS",
+      "kind": "reads",
+      "status": "added"
+    },
+    {
+      "from": "RateLimiter.bucketFor",
+      "to": "TokenBucket",
+      "kind": "creates",
+      "status": "added"
+    },
+    {
+      "from": "orders.createOrder",
+      "to": "db.orders.insert",
+      "kind": "calls",
+      "status": "context"
+    },
+    {
+      "from": "orders.createOrder",
+      "to": "config.MAX_ORDERS_PER_MINUTE",
+      "kind": "reads",
+      "status": "removed"
+    },
+    {
+      "from": "orders.createOrder",
+      "to": "orders.recentOrders",
+      "kind": "writes",
+      "status": "removed"
+    }
   ],
   "flows": [
     {
       "id": "request",
       "name": "A request passes through the limiter",
       "description": "Every authenticated request now spends one token before it reaches its route. An empty bucket ends the request with 429 and a retry-after header.",
-      "steps": ["Router.handle", "auth.requireAuth", "limits.rateLimit", "RateLimiter.check", "RateLimiter.bucketFor", "TokenBucket.refill", "TokenBucket.tryTake", "orders.createOrder"]
+      "steps": [
+        "Router.handle",
+        "auth.requireAuth",
+        "limits.rateLimit",
+        "RateLimiter.check",
+        "RateLimiter.bucketFor",
+        "TokenBucket.refill",
+        "TokenBucket.tryTake",
+        "orders.createOrder"
+      ]
     },
     {
       "id": "startup",
       "name": "Server start-up wiring",
       "description": "buildServer creates one RateLimiter for the process and installs its middleware directly after authentication.",
-      "steps": ["server.buildServer", "Clock.systemClock", "RateLimiter", "limits.rateLimit", "Router.use"]
+      "steps": [
+        "server.buildServer",
+        "Clock.systemClock",
+        "RateLimiter",
+        "limits.rateLimit",
+        "Router.use"
+      ]
     }
   ],
   "notes": [
-    { "kind": "risk", "refs": ["RateLimiter.buckets"],
-      "text": "Buckets are never evicted. Memory grows with every distinct client the process has ever seen." },
-    { "kind": "behaviour", "refs": ["orders.createOrder", "config.MAX_ORDERS_PER_MINUTE", "config.LIMITS"],
-      "text": "Order creation is no longer capped at 5 per minute. It now shares the general allowance, so a free user can place 20 orders at once and then about 60 a minute." },
-    { "kind": "behaviour", "refs": ["server.buildServer", "limits.rateLimit"],
-      "text": "The limiter runs after requireAuth, so unauthenticated requests are not limited at all." },
-    { "kind": "note", "refs": ["RateLimiter"],
-      "text": "Limits are held in process memory, so each server instance counts separately." }
+    {
+      "kind": "risk",
+      "refs": [
+        "RateLimiter.buckets"
+      ],
+      "text": "Buckets are never evicted. Memory grows with every distinct client the process has ever seen."
+    },
+    {
+      "kind": "behaviour",
+      "refs": [
+        "orders.createOrder",
+        "config.MAX_ORDERS_PER_MINUTE",
+        "config.LIMITS"
+      ],
+      "text": "Order creation is no longer capped at 5 per minute. It now shares the general allowance, so a free user can place 20 orders at once and then about 60 a minute."
+    },
+    {
+      "kind": "behaviour",
+      "refs": [
+        "server.buildServer",
+        "limits.rateLimit"
+      ],
+      "text": "The limiter runs after requireAuth, so unauthenticated requests are not limited at all."
+    },
+    {
+      "kind": "note",
+      "refs": [
+        "RateLimiter"
+      ],
+      "text": "Limits are held in process memory, so each server instance counts separately."
+    }
   ]
 }
