@@ -3,7 +3,8 @@
   "$extensions": {
     "openarc": {
       "name": "dark",
-      "scheme": "dark"
+      "scheme": "dark",
+      "system": true
     }
   },
   "color": {

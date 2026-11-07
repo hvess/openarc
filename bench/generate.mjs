@@ -1,0 +1,111 @@
+#!/usr/bin/env node
+// Generate synthetic change graphs of a given size and build a viewer page for each, to measure
+// the viewer on large diagrams. Output is deterministic, so runs can be compared over time.
+//
+//   node bench/generate.mjs 25 50 100 200      writes bench/out/n<N>.json and bench/out/n<N>.html
+//
+// Then serve the repository (npm run serve), open a page, and evaluate bench/measure.js in it
+// (paste it into the console). Measure with the window visible: background tabs throttle timers.
+
+import { mkdirSync, writeFileSync } from "node:fs";
+import { join, dirname } from "node:path";
+import { fileURLToPath } from "node:url";
+import { checkGraph } from "../tools/graph.mjs";
+import { buildPage } from "../tools/page.mjs";
+
+const here = dirname(fileURLToPath(import.meta.url));
+const sizes = process.argv.slice(2).map(Number).filter((n) => n > 0);
+if (!sizes.length) {
+  console.error("usage: node bench/generate.mjs <components>...");
+  process.exit(1);
+}
+
+// mulberry32: a small seeded generator, so the same size always gives the same graph.
+function random(seed) {
+  return () => {
+    seed = (seed + 0x6d2b79f5) | 0;
+    let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+function generate(n) {
+  const rnd = random(n);
+  const pick = (list) => list[Math.floor(rnd() * list.length)];
+  const weighted = (pairs) => { let r = rnd() * pairs.reduce((s, [, w]) => s + w, 0); return pairs.find(([, w]) => (r -= w) < 0)[0]; };
+  const MARK = { added: "+", changed: "~", removed: "-", context: " " };
+
+  const components = Array.from({ length: n }, (_, i) => {
+    const status = weighted([["context", 55], ["changed", 25], ["added", 15], ["removed", 5]]);
+    const file = `src/part${i % 12}/component${i}.ts`;
+    const members = Array.from({ length: 2 + Math.floor(rnd() * 5) }, (_, j) => {
+      const mStatus = status === "changed" ? (j === 0 ? "changed" : weighted([["context", 50], ["changed", 25], ["added", 15], ["removed", 10]])) : status;
+      const kind = j > 0 && rnd() < 0.15 ? pick(["state", "const"]) : "function";
+      const name = kind === "function" ? `step${j}` : `value${j}`;
+      const anchor = { file, lines: [j * 10 + 1, j * 10 + 6], code: `function ${name}(input) {\n  return input;\n}` };
+      return {
+        id: `c${i}.${name}`, name, kind, status: mStatus,
+        signature: kind === "function" ? "(input, options) → result" : undefined,
+        summary: `Does step ${j} of component ${i}.`,
+        klar: kind === "function" ? `${MARK[mStatus]} ${name}(input, options) → result\n    value = compute input + 1\n    Return value\n\n    no effects` : undefined,
+        effects: kind === "function" ? [] : undefined,
+        ...(mStatus === "removed" ? { base: anchor } : { source: anchor }),
+        ...(mStatus === "changed" ? { base: anchor } : {}),
+      };
+    });
+    return { id: `c${i}`, name: `Component${i}`, kind: pick(["class", "module", "class", "interface"]), status, file, summary: `Synthetic component ${i}.`, members };
+  });
+
+  // Mostly forward calls to nearby components, so the layout has depth, plus some back edges.
+  const edges = [];
+  for (const [i, c] of components.entries()) {
+    for (const m of c.members.filter((x) => x.kind === "function")) {
+      for (let k = Math.floor(rnd() * 5); k > 0; k--) {
+        const j = Math.min(n - 1, Math.max(0, i + (rnd() < 0.9 ? 1 + Math.floor(rnd() * 10) : -1 - Math.floor(rnd() * 5))));
+        if (j === i) continue;
+        const target = pick(components[j].members);
+        const ends = [m.status, target.status];
+        const status = ends.includes("removed") ? "removed" : ends.includes("added") ? "added" : rnd() < 0.15 ? "changed" : "context";
+        edges.push({
+          from: m.id, to: target.id, status,
+          kind: target.kind === "function" ? weighted([["calls", 85], ["creates", 15]]) : pick(["reads", "writes"]),
+          resolution: weighted([["static", 85], ["inferred", 10], ["dispatch", 5]]),
+        });
+      }
+    }
+  }
+
+  // Flows walk along edges, so each step leads to the next.
+  const flows = [0, 1].map((f) => {
+    let at = pick(components.slice(0, Math.max(1, n >> 2))).members[0].id;
+    const steps = [at];
+    for (let s = 0; s < 7; s++) {
+      const next = edges.filter((e) => e.from === at);
+      if (!next.length) break;
+      at = pick(next).to;
+      steps.push(at);
+    }
+    if (steps.length < 2) steps.push(components[n - 1].id);
+    return { id: `flow${f}`, name: `Synthetic flow ${f + 1}`, description: "A path along the generated edges.", steps };
+  });
+  const notes = ["risk", "behaviour", "note"].map((kind) => ({ kind, text: `A synthetic ${kind} note.`, refs: [pick(components).members[0].id] }));
+
+  return {
+    openarc: "0.1",
+    change: { title: `Synthetic change, ${n} components`, summary: "Generated by bench/generate.mjs to measure the viewer on large diagrams." },
+    components, edges, flows, notes,
+  };
+}
+
+const out = join(here, "out");
+mkdirSync(out, { recursive: true });
+for (const n of sizes) {
+  const graph = JSON.parse(JSON.stringify(generate(n)));
+  const problems = checkGraph(graph);
+  if (problems.length) throw new Error(`generated graph n${n} does not conform:\n${problems.slice(0, 10).join("\n")}`);
+  writeFileSync(join(out, `n${n}.json`), JSON.stringify(graph));
+  writeFileSync(join(out, `n${n}.html`), buildPage(graph, here).html);
+  const members = graph.components.reduce((s, c) => s + c.members.length, 0);
+  console.log(`✓ bench/out/n${n}.html (${n} components, ${members} members, ${graph.edges.length} edges)`);
+}

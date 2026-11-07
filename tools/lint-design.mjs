@@ -3,9 +3,9 @@
 //
 //   node tools/lint-design.mjs
 //
-// Inside the viewer's <style> block it rejects colour literals (#hex, rgb(), hsl()),
-// pixel and millisecond lengths, and numeric font weights. Media query conditions are
-// exempt, since CSS custom properties cannot be used there.
+// Inside the viewer's <style> block it rejects colour literals (#hex, rgb(), hsl()), pixel and
+// millisecond lengths, and numeric font weights. CSS custom properties cannot be used in media
+// query conditions, so those are checked against the breakpoint tokens instead.
 
 import { readFileSync } from "node:fs";
 import { join, dirname } from "node:path";
@@ -24,15 +24,23 @@ const RULES = [
 
 export function lintDesign(file = join(root, "viewer/index.html")) {
   const html = readFileSync(file, "utf8");
+  const breakpoints = Object.values(JSON.parse(readFileSync(join(root, "design/tokens/components.json"), "utf8")).breakpoint)
+    .filter((t) => t?.$value).map((t) => t.$value);
   const start = html.indexOf("<style>"), end = html.indexOf("</style>", start);
   const before = html.slice(0, start).split("\n").length;
   const problems = [];
   html.slice(start + 7, end).split("\n").forEach((line, i) => {
     const code = line.replace(/\/\*.*?\*\//g, "");
-    if (/^\s*@media/.test(code)) return;
+    const at = `viewer/index.html:${before + i}`;
+    if (/^\s*@media/.test(code)) {
+      for (const [, width] of code.matchAll(/width:\s*([\d.]+px)/g)) {
+        if (!breakpoints.includes(width)) problems.push(`${at}: media query width ${width} is not a breakpoint token (${breakpoints.join(", ")})`);
+      }
+      return;
+    }
     for (const [re, why] of RULES) {
       const m = code.match(re);
-      if (m) problems.push(`viewer/index.html:${before + i}: ${why}: "${m[0]}"`);
+      if (m) problems.push(`${at}: ${why}: "${m[0]}"`);
     }
   });
   return problems;

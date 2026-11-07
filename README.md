@@ -17,22 +17,38 @@ The raw code is still there for checking the Klar against it, one click away, bu
 |---|---|
 | [`spec/klar.md`](spec/klar.md) | **Klar 0.2**: the language for describing code in simpler terms |
 | [`spec/graph.md`](spec/graph.md), [`spec/graph.schema.json`](spec/graph.schema.json) | **OpenArc Graph 0.1**: the JSON format for a change's architecture |
-| [`viewer/index.html`](viewer/index.html) | A self-contained viewer: pan, zoom, flows, a function inspector |
-| [`design/`](design) | The design system: tokens for grid, spacing, type and colour, and one file per theme |
-| [`tools/build.mjs`](tools/build.mjs) | Joins a graph, its Klar document and the source into a finished graph and viewer page |
+| [`viewer/`](viewer) | The viewer: pan, zoom, flows, a function inspector. [`index.html`](viewer/index.html) is the page and [`src/`](viewer/src) its modules |
+| [`design/`](design) | The design system: tokens for grid, spacing, type, colour and viewer behaviour, and one file per theme |
+| [`tools/`](tools) | The build, the design checks, and the readers they share (Klar, JSON Schema, config) |
+| [`tests/`](tests) | Tests for the tools, run with Node's built-in runner |
+| [`bench/`](bench) | Synthetic graphs of any size and a script that times the viewer on them |
+| [`vendor/elkjs`](vendor/elkjs) | ELK 0.9.3, the layout engine, pinned (EPL-2.0) |
 | [`examples/rate-limit`](examples/rate-limit) | A worked example: adding a token-bucket rate limiter to a small TypeScript API |
 
 ## Try the example
 
 ```bash
-node tools/build.mjs examples/rate-limit
+npm run build
 ```
 
-Then serve the folder and open `examples/rate-limit/index.html`. The viewer loads its layout engine from a CDN, so open it over HTTP rather than as a file:
+This writes `examples/rate-limit/graph.json` and `examples/rate-limit/index.html`, a single page with the graph, the viewer and its layout engine inlined. Serve the folder and open it:
 
 ```bash
-python3 -m http.server 4719
+npm run serve
 ```
+
+OpenArc has no dependencies to install; everything runs on Node 20 or later.
+
+| Command | |
+|---|---|
+| `npm run build` | Build the example. `node tools/build.mjs <dir>` builds any example directory |
+| `npm run check` | Check the design system: the viewer's CSS uses tokens only, and every colour pairing meets WCAG contrast |
+| `npm test` | Run the tests |
+| `npm run bench` | Generate 25- to 200-component graphs in `bench/out/` for measuring the viewer; [`bench/generate.mjs`](bench/generate.mjs) says how |
+
+The build fails if the graph doesn't conform to [the spec](spec/graph.md#10-conformance): it validates against the schema, ids are unique, every reference resolves, and every source line range exists.
+
+To work on the viewer without building, serve the repository and open `viewer/index.html?src=../examples/rate-limit/graph.json`. It loads its modules and stylesheet directly.
 
 ## Configuration
 
@@ -48,6 +64,7 @@ OpenArc reads `openarc.config.json` from the directory it builds, or the nearest
 | Setting | Default | |
 |---|---|---|
 | `theme` | `"system"` | `"system"` follows the reader's light or dark setting. `"light"`, `"dark"` or the name of any theme in [`design/themes/`](design/themes) fixes it |
+| `layoutEngine` | `"inline"` | `"inline"` embeds the layout engine, so a built page is one file that needs no CDN (about 1.6 MB, 470 kB compressed). `"cdn"` loads it from jsDelivr when the page opens |
 
 Unknown settings and values stop the build, so a typo never goes unnoticed.
 

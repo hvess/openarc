@@ -11,6 +11,11 @@
       "type": "string",
       "default": "system",
       "examples": ["system", "light", "dark"]
+    },
+    "layoutEngine": {
+      "description": "Where a built page gets ELK, the engine that lays out the diagram. \"inline\" embeds it, so the page is one file that works offline (about 1.6 MB, 470 kB compressed). \"cdn\" loads it from jsDelivr when the page opens.",
+      "enum": ["inline", "cdn"],
+      "default": "inline"
     }
   },
   "additionalProperties": false

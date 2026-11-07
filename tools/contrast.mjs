@@ -10,10 +10,9 @@ import { buildTokens } from "./tokens.mjs";
 
 const TEXT = 4.5, UI = 3;
 const SURFACES = ["color.surface.panel", "color.surface.card", "color.surface.sunken"];
-const STATUSES = ["added", "changed", "removed"];
-
-// [foreground, background, minimum, what it is]
-export const PAIRS = [
+// [foreground, background, minimum, what it is]. Statuses come from the themes; "context" is
+// never a change, so it has its own, smaller set of pairings.
+export const pairs = (statuses) => [
   ...["primary", "secondary", "tertiary"].flatMap((t) => SURFACES.map((s) => [`color.text.${t}`, s, TEXT, `${t} text`])),
   ...SURFACES.map((s) => ["color.text.quaternary", s, UI, "metadata"]),
   ["color.text.primary", "color.canvas.bg", TEXT, "text on canvas"],
@@ -21,7 +20,7 @@ export const PAIRS = [
   ["color.accent.text", "color.surface.selected", TEXT, "selected member"],
   ["color.text.on-accent", "color.accent.solid", TEXT, "step numbers"],
   ["color.accent.solid", "color.canvas.bg", UI, "flow path"],
-  ...STATUSES.flatMap((s) => [
+  ...statuses.filter((s) => s !== "context").flatMap((s) => [
     [`color.status.${s}.text`, `color.status.${s}.subtle`, TEXT, `${s} pill`],
     [`color.status.${s}.text`, "color.surface.panel", TEXT, `${s} note label`],
     [`color.status.${s}.solid`, "color.surface.card", UI, `${s} mark`],
@@ -38,10 +37,10 @@ export const PAIRS = [
   ["color.syntax.comment", "color.surface.sunken", UI, "Klar comment"],
 ];
 
-export function checkContrast(colors) {
+export function checkContrast({ colors, statuses }) {
   const results = [];
   for (const [theme, map] of Object.entries(colors)) {
-    for (const [fg, bg, min, what] of PAIRS) {
+    for (const [fg, bg, min, what] of pairs(statuses)) {
       const ratio = contrast(parse(map.get(fg)), parse(map.get(bg)));
       results.push({ theme, fg, bg, min, what, ratio, ok: ratio >= min });
     }
@@ -83,7 +82,7 @@ function contrast(a, b) {
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
-  const results = checkContrast(buildTokens().colors);
+  const results = checkContrast(buildTokens());
   const failed = results.filter((r) => !r.ok);
   const short = (p) => p.replace(/^color\./, "");
   for (const r of process.argv.includes("--all") ? results : failed) {

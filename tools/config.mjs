@@ -1,14 +1,22 @@
 // Load openarc.config.json.
 //
-// OpenArc looks for the file in the given directory and then in each parent, and uses
-// the first one it finds. Settings that are left out take their defaults, and unknown
-// settings or values are errors, so a typo never silently does nothing.
+// OpenArc looks for the file in the given directory and then in each parent, and uses the first
+// one it finds. spec/config.schema.json defines every setting and its default. Settings that are
+// left out take their defaults, and unknown settings or values are errors, so a typo never
+// silently does nothing.
 
 import { readFileSync, existsSync } from "node:fs";
 import { join, dirname, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
+import { validate } from "./schema.mjs";
+
+const root = dirname(dirname(fileURLToPath(import.meta.url)));
+const SCHEMA = JSON.parse(readFileSync(join(root, "spec/config.schema.json"), "utf8"));
 
 export const CONFIG_FILE = "openarc.config.json";
-export const DEFAULTS = { theme: "system" };
+export const DEFAULTS = Object.fromEntries(
+  Object.entries(SCHEMA.properties).filter(([, s]) => "default" in s).map(([k, s]) => [k, s.default]),
+);
 
 export function findConfig(start) {
   let dir = resolve(start);
@@ -21,24 +29,19 @@ export function findConfig(start) {
   }
 }
 
+// themes lists the theme names in design/themes/, which the schema cannot know.
 export function loadConfig(start, { themes }) {
   const file = findConfig(start);
   const raw = file ? JSON.parse(readFileSync(file, "utf8")) : {};
-  const problems = [];
+  const problems = validate(raw, SCHEMA);
 
-  for (const key of Object.keys(raw)) {
-    if (key !== "$schema" && !(key in DEFAULTS)) problems.push(`unknown setting "${key}"`);
-  }
   const config = { ...DEFAULTS, ...raw };
   delete config.$schema;
-
   const allowed = ["system", ...themes];
-  if (typeof config.theme !== "string" || !allowed.includes(config.theme)) {
-    problems.push(`theme must be one of ${allowed.map((t) => `"${t}"`).join(", ")}; got ${JSON.stringify(config.theme)}`);
+  if (!allowed.includes(config.theme)) {
+    problems.push(`$.theme: must be one of ${allowed.map((t) => `"${t}"`).join(", ")}; got ${JSON.stringify(config.theme)}`);
   }
 
-  if (problems.length) {
-    throw new Error(`${file ?? CONFIG_FILE}: ${problems.join("; ")}`);
-  }
+  if (problems.length) throw new Error(`${file ?? CONFIG_FILE}: ${problems.join("; ")}`);
   return { config, file };
 }

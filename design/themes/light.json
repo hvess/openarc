@@ -4,7 +4,7 @@
     "openarc": {
       "name": "light",
       "scheme": "light",
-      "default": true
+      "system": true
     }
   },
   "color": {

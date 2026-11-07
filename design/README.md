@@ -6,14 +6,16 @@ Every visual decision in OpenArc's viewer comes from a design token. Tokens are 
 design/
   tokens/primitives.json   raw palette and font stacks          never reach CSS
   tokens/foundation.json   grid, space, radius, border, type, motion, opacity, layers
-  tokens/components.json   component sizes the layout depends on
+  tokens/components.json   component sizes, breakpoints and viewer behaviour
   themes/light.json        colours and shadows for one theme
   themes/dark.json
 tools/tokens.mjs           JSON → viewer/tokens.css
-tools/lint-design.mjs      fails the build if the viewer CSS uses a raw value
+tools/lint-design.mjs      rejects raw values in the viewer CSS
+tools/contrast.mjs         measures WCAG contrast for every colour pairing
+tools/check.mjs            runs both; `npm run check`
 ```
 
-`node tools/build.mjs <example>` regenerates the tokens, runs the lint and inlines the CSS, so a built page is always in sync with `design/`.
+`node tools/build.mjs <example>` regenerates the tokens and inlines the CSS, so a built page is always in sync with `design/`. `npm run check` runs the lint and the contrast check.
 
 ## Layers
 
@@ -38,6 +40,25 @@ Tokens use the [W3C Design Tokens format](https://tr.designtokens.org/format/): 
 The diagram layout reads card sizes from the component tokens, measures each card's content, rounds its width up to `grid.unit`, gives every card in a column the column's widest width, and snaps positions to the grid. Nothing on the canvas is placed by hand.
 
 Below `diagram.detail-zoom` (0.4), text is too small to read, so cards stop drawing it and keep only their shape and diff colours, and edges join up into one line per pair of cards. That keeps diagrams with a hundred or more components cheap to draw.
+
+## Viewer behaviour
+
+How the canvas moves is set by tokens too, in the `diagram` group of `components.json`, each with a description. The viewer reads them at start-up, so changing one needs no code change.
+
+| Token | Value | |
+|---|---|---|
+| `zoom-min`, `zoom-max` | 0.2, 2.5 | Zoom range |
+| `zoom-step` | 1.25 | One press of the zoom buttons or keys |
+| `zoom-wheel` | 0.01 | Zoom per pixel of wheel or pinch movement |
+| `zoom-focus` | 0.85 | Least zoom when the view moves to one card |
+| `drag-threshold` | 4px | Movement before a press becomes a drag |
+| `settle-delay` | 150ms | Pause after zooming before text and edges are redrawn sharp |
+| `paint-delay` | 120ms | Pause before edges repaint on the main thread, when there is no worker |
+| `edge-margin` | 0.25 | How far the edge bitmap reaches beyond the view |
+| `font-timeout` | 1500ms | Wait for web fonts before measuring cards with the fallback |
+| `large-graph` | 40 | Above this many components, the layout trades stable order for speed |
+
+`breakpoint.narrow` (760px) is where the sidebar and inspector become sheets. CSS can't use a custom property in a media query, so the stylesheet repeats the value and the lint checks that it matches.
 
 ## Spacing
 
@@ -97,16 +118,18 @@ Each theme defines the same set of colour roles:
 | `color.syntax` | `control`, `declaration`, `name`, `value`, `verb`, `operator`, `effect`, `comment` | Klar highlighting, one per token class in the [Klar spec](../spec/klar.md#13-highlighting) |
 | `shadow` | `raised`, `overlay` | Cards and controls; the inspector |
 
+For each status, `tokens.mjs` also generates a class, such as `.s-added`, that sets `--st-solid`, `--st-text` and `--st-subtle`. Components write one rule for every status (`.dot { background: var(--st-solid) }`) and put the status class on the element. A new status needs only its colours in each theme.
+
 Status always means the same thing everywhere: green is added, amber is changed, red is removed, grey is context. Accent (indigo) is reserved for what the reader is doing (selection, flows, focus), so it never competes with status.
 
 ## Themes
 
-The theme is chosen in [`openarc.config.json`](../openarc.config.json) with the `theme` setting. The default, `system`, follows the reader's operating system between `light` and `dark`. Any other value names a theme file, and the build sets `data-theme` on the page's `<html>` to fix it.
+The theme is chosen in [`openarc.config.json`](../openarc.config.json) with the `theme` setting. The default, `system`, follows the reader's operating system between the two themes marked `"system": true` in `$extensions.openarc`: one with `scheme: "light"`, which is also the fallback, and one with `scheme: "dark"`. Marking two themes of the same scheme fails the build. Any other value names a theme file, and the build sets `data-theme` on the page's `<html>` to fix it.
 
 ### Adding a theme
 
 1. Copy `design/themes/light.json` (or `dark.json`) to `design/themes/<name>.json`.
-2. Set `$extensions.openarc.name` to `<name>` and `scheme` to `light` or `dark`.
+2. Set `$extensions.openarc.name` to `<name>` and `scheme` to `light` or `dark`. Remove `system`, unless the new theme should replace the current one for its scheme.
 3. Point each token at a primitive, adding primitives to `design/tokens/primitives.json` if you need new colours.
 4. Run the build. It fails if the new theme is missing a token or defines one the others don't.
 5. Set `"theme": "<name>"` in `openarc.config.json` to use it.
@@ -115,13 +138,13 @@ Its CSS appears as `:root[data-theme="<name>"]`. Only colours and shadows are th
 
 ## Rules
 
-`tools/lint-design.mjs` checks the viewer stylesheet on every build and rejects:
+`tools/lint-design.mjs` checks the viewer stylesheet and rejects:
 
 - colour literals (`#hex`, `rgb()`, `hsl()`)
 - pixel lengths and durations
 - numeric font weights
 - `font-size` and `line-height` outside the type roles
 
-Media query conditions are exempt, because CSS custom properties can't be used there.
+Media query conditions can't use custom properties, so instead their widths must equal a `breakpoint` token.
 
-`tools/contrast.mjs` measures WCAG contrast for every colour pairing the viewer uses, in every theme, and the build fails if one falls short: 4.5:1 for text, including Klar on added and removed lines, and 3:1 for status marks, edges and de-emphasised metadata. Run `node tools/contrast.mjs --all` to see every ratio.
+`tools/contrast.mjs` measures WCAG contrast for every colour pairing the viewer uses, in every theme, and `npm run check` fails if one falls short: 4.5:1 for text, including Klar on added and removed lines, and 3:1 for status marks, edges and de-emphasised metadata. Run `node tools/contrast.mjs --all` to see every ratio.

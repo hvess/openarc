@@ -146,6 +146,67 @@
       "$type": "number",
       "$value": 0.4,
       "$description": "Below this zoom, cards drop their text and edges join up per card, so large diagrams stay cheap to draw"
+    },
+    "zoom-min": {
+      "$type": "number",
+      "$value": 0.2,
+      "$description": "Smallest zoom"
+    },
+    "zoom-max": {
+      "$type": "number",
+      "$value": 2.5,
+      "$description": "Largest zoom"
+    },
+    "zoom-step": {
+      "$type": "number",
+      "$value": 1.25,
+      "$description": "Zoom factor of one press of the zoom buttons or keys"
+    },
+    "zoom-wheel": {
+      "$type": "number",
+      "$value": 0.01,
+      "$description": "Zoom rate per pixel of wheel or trackpad pinch movement"
+    },
+    "zoom-focus": {
+      "$type": "number",
+      "$value": 0.85,
+      "$description": "Least zoom when the view moves to a single card"
+    },
+    "drag-threshold": {
+      "$value": "4px",
+      "$description": "How far the pointer moves before a press becomes a drag rather than a click"
+    },
+    "edge-margin": {
+      "$type": "number",
+      "$value": 0.25,
+      "$description": "How far the painted edge bitmap reaches beyond the view, as a share of the view. Bigger means fewer repaints while panning; smaller means each repaint is quicker"
+    },
+    "settle-delay": {
+      "$type": "duration",
+      "$value": "150ms",
+      "$description": "How long zooming must pause before text and edges are redrawn sharp"
+    },
+    "paint-delay": {
+      "$type": "duration",
+      "$value": "120ms",
+      "$description": "Without a worker, how long movement must pause before edges are repainted on the main thread"
+    },
+    "font-timeout": {
+      "$type": "duration",
+      "$value": "1500ms",
+      "$description": "How long to wait for web fonts before measuring cards with the fallback font"
+    },
+    "large-graph": {
+      "$type": "number",
+      "$value": 40,
+      "$description": "Above this many components, the layout stops preserving the graph's order and sweeps less, which is about five times faster"
+    }
+  },
+  "breakpoint": {
+    "$type": "dimension",
+    "narrow": {
+      "$value": "760px",
+      "$description": "At this viewport width and below, the sidebar and inspector become sheets over the canvas. tools/lint-design.mjs checks that the viewer's media query uses this value."
     }
   }
 }
