@@ -18,6 +18,7 @@ The raw code is still there for checking the Klar against it, one click away, bu
 | [`spec/klar.md`](spec/klar.md) | **Klar 0.2**: the language for describing code in simpler terms |
 | [`spec/graph.md`](spec/graph.md), [`spec/graph.schema.json`](spec/graph.schema.json) | **OpenArc Graph 0.1**: the JSON format for a change's architecture |
 | [`viewer/index.html`](viewer/index.html) | A self-contained viewer: pan, zoom, flows, a function inspector |
+| [`design/`](design) | The design system: tokens for grid, spacing, type and colour, and one file per theme |
 | [`tools/build.mjs`](tools/build.mjs) | Joins a graph, its Klar document and the source into a finished graph and viewer page |
 | [`examples/rate-limit`](examples/rate-limit) | A worked example: adding a token-bucket rate limiter to a small TypeScript API |
 

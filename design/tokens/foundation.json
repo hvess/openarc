@@ -1,0 +1,295 @@
+{
+  "$description": "Theme-independent semantic tokens: grid, spacing, radii, borders, typography and motion. Every value sits on the 4px baseline unless noted.",
+  "grid": {
+    "$type": "dimension",
+    "baseline": {
+      "$value": "4px",
+      "$description": "All line heights and vertical sizes are multiples of this."
+    },
+    "unit": {
+      "$value": "8px",
+      "$description": "Layout grid. Component sizes and diagram positions snap to it."
+    },
+    "canvas": {
+      "$value": "24px",
+      "$description": "Spacing of the dots on the diagram canvas (3 units)."
+    }
+  },
+  "space": {
+    "$type": "dimension",
+    "0": {
+      "$value": "0px"
+    },
+    "1": {
+      "$value": "4px"
+    },
+    "2": {
+      "$value": "8px"
+    },
+    "3": {
+      "$value": "12px"
+    },
+    "4": {
+      "$value": "16px"
+    },
+    "5": {
+      "$value": "20px"
+    },
+    "6": {
+      "$value": "24px"
+    },
+    "8": {
+      "$value": "32px"
+    },
+    "10": {
+      "$value": "40px"
+    },
+    "12": {
+      "$value": "48px"
+    },
+    "16": {
+      "$value": "64px"
+    }
+  },
+  "radius": {
+    "$type": "dimension",
+    "xs": {
+      "$value": "4px"
+    },
+    "sm": {
+      "$value": "6px"
+    },
+    "md": {
+      "$value": "8px"
+    },
+    "lg": {
+      "$value": "12px"
+    },
+    "full": {
+      "$value": "999px"
+    }
+  },
+  "border": {
+    "$type": "dimension",
+    "width": {
+      "$value": "1px"
+    },
+    "width-strong": {
+      "$value": "2px"
+    }
+  },
+  "font": {
+    "family": {
+      "$type": "fontFamily",
+      "sans": {
+        "$value": "{fontFamily.inter}"
+      },
+      "mono": {
+        "$value": "{fontFamily.jetbrains}"
+      }
+    },
+    "weight": {
+      "$type": "fontWeight",
+      "regular": {
+        "$value": 400
+      },
+      "medium": {
+        "$value": 500
+      },
+      "semibold": {
+        "$value": 600
+      }
+    }
+  },
+  "type": {
+    "$type": "typography",
+    "$description": "Text roles. Seven sizes in all: 11, 12, 13, 14, 15, 16, 20.",
+    "display": {
+      "$value": {
+        "fontFamily": "{font.family.sans}",
+        "fontSize": "20px",
+        "lineHeight": "28px",
+        "fontWeight": "{font.weight.semibold}",
+        "letterSpacing": "-0.02em"
+      },
+      "$description": "Change title"
+    },
+    "title-code": {
+      "$value": {
+        "fontFamily": "{font.family.mono}",
+        "fontSize": "20px",
+        "lineHeight": "28px",
+        "fontWeight": "{font.weight.semibold}",
+        "letterSpacing": "-0.02em"
+      },
+      "$description": "Inspected member name"
+    },
+    "heading": {
+      "$value": {
+        "fontFamily": "{font.family.sans}",
+        "fontSize": "16px",
+        "lineHeight": "24px",
+        "fontWeight": "{font.weight.semibold}",
+        "letterSpacing": "-0.01em"
+      },
+      "$description": "Component name on a card"
+    },
+    "lead": {
+      "$value": {
+        "fontFamily": "{font.family.sans}",
+        "fontSize": "15px",
+        "lineHeight": "24px",
+        "fontWeight": "{font.weight.regular}",
+        "letterSpacing": "0em"
+      },
+      "$description": "Member summary in the inspector"
+    },
+    "body": {
+      "$value": {
+        "fontFamily": "{font.family.sans}",
+        "fontSize": "14px",
+        "lineHeight": "20px",
+        "fontWeight": "{font.weight.regular}",
+        "letterSpacing": "0em"
+      }
+    },
+    "body-strong": {
+      "$value": {
+        "fontFamily": "{font.family.sans}",
+        "fontSize": "14px",
+        "lineHeight": "20px",
+        "fontWeight": "{font.weight.semibold}",
+        "letterSpacing": "-0.005em"
+      }
+    },
+    "body-sm": {
+      "$value": {
+        "fontFamily": "{font.family.sans}",
+        "fontSize": "13px",
+        "lineHeight": "20px",
+        "fontWeight": "{font.weight.regular}",
+        "letterSpacing": "0em"
+      }
+    },
+    "caption": {
+      "$value": {
+        "fontFamily": "{font.family.sans}",
+        "fontSize": "12px",
+        "lineHeight": "16px",
+        "fontWeight": "{font.weight.regular}",
+        "letterSpacing": "0em"
+      },
+      "$description": "Component summary on a card"
+    },
+    "label": {
+      "$value": {
+        "fontFamily": "{font.family.sans}",
+        "fontSize": "12px",
+        "lineHeight": "16px",
+        "fontWeight": "{font.weight.medium}",
+        "letterSpacing": "0em"
+      }
+    },
+    "overline": {
+      "$value": {
+        "fontFamily": "{font.family.sans}",
+        "fontSize": "11px",
+        "lineHeight": "16px",
+        "fontWeight": "{font.weight.semibold}",
+        "letterSpacing": "0.08em",
+        "textTransform": "uppercase"
+      },
+      "$description": "Section headings, status pills"
+    },
+    "code": {
+      "$value": {
+        "fontFamily": "{font.family.mono}",
+        "fontSize": "12px",
+        "lineHeight": "20px",
+        "fontWeight": "{font.weight.regular}",
+        "letterSpacing": "0em"
+      },
+      "$description": "Klar and source blocks"
+    },
+    "code-strong": {
+      "$value": {
+        "fontFamily": "{font.family.mono}",
+        "fontSize": "13px",
+        "lineHeight": "20px",
+        "fontWeight": "{font.weight.medium}",
+        "letterSpacing": "0em"
+      },
+      "$description": "Member names"
+    },
+    "code-sm": {
+      "$value": {
+        "fontFamily": "{font.family.mono}",
+        "fontSize": "12px",
+        "lineHeight": "16px",
+        "fontWeight": "{font.weight.regular}",
+        "letterSpacing": "0em"
+      },
+      "$description": "Signatures, counters"
+    },
+    "code-meta": {
+      "$value": {
+        "fontFamily": "{font.family.mono}",
+        "fontSize": "11px",
+        "lineHeight": "16px",
+        "fontWeight": "{font.weight.medium}",
+        "letterSpacing": "0em"
+      },
+      "$description": "Kinds, paths, line numbers"
+    }
+  },
+  "motion": {
+    "duration": {
+      "$type": "duration",
+      "fast": {
+        "$value": "120ms"
+      },
+      "base": {
+        "$value": "200ms"
+      },
+      "slow": {
+        "$value": "320ms"
+      }
+    },
+    "easing": {
+      "$type": "cubicBezier",
+      "standard": {
+        "$value": [
+          0.2,
+          0.8,
+          0.2,
+          1
+        ]
+      }
+    }
+  },
+  "opacity": {
+    "$type": "number",
+    "dimmed": {
+      "$value": 0.32,
+      "$description": "Cards outside the current focus"
+    },
+    "dimmed-row": {
+      "$value": 0.4
+    },
+    "dimmed-edge": {
+      "$value": 0.1
+    }
+  },
+  "layer": {
+    "$type": "number",
+    "canvas-controls": {
+      "$value": 2
+    },
+    "panel": {
+      "$value": 3
+    },
+    "overlay": {
+      "$value": 4
+    }
+  }
+}

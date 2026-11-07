@@ -1,0 +1,72 @@
+{
+  "$description": "Raw values. Never used directly by components: themes and semantic tokens refer to these, and only semantic tokens reach CSS.",
+  "palette": {
+    "$type": "color",
+    "neutral": {
+      "0": { "$value": "#ffffff" },
+      "25": { "$value": "#fafaf9" },
+      "50": { "$value": "#f4f4f2" },
+      "100": { "$value": "#ececea" },
+      "150": { "$value": "#e2e2df" },
+      "200": { "$value": "#d5d5d1" },
+      "300": { "$value": "#b9bab6" },
+      "400": { "$value": "#9a9ca1" },
+      "500": { "$value": "#7b7e85" },
+      "600": { "$value": "#5f626a" },
+      "700": { "$value": "#464950" },
+      "750": { "$value": "#36383e" },
+      "800": { "$value": "#2a2c31" },
+      "850": { "$value": "#212226" },
+      "900": { "$value": "#1b1c1f" },
+      "925": { "$value": "#16171a" },
+      "950": { "$value": "#111214" },
+      "1000": { "$value": "#000000" }
+    },
+    "green": {
+      "50": { "$value": "#e8f6ee" },
+      "100": { "$value": "#cdebd9" },
+      "400": { "$value": "#43c97f" },
+      "600": { "$value": "#1a8f4c" },
+      "700": { "$value": "#136b39" },
+      "900": { "$value": "#15301f" }
+    },
+    "amber": {
+      "50": { "$value": "#fcf2df" },
+      "100": { "$value": "#f7e0b5" },
+      "400": { "$value": "#e3a643" },
+      "600": { "$value": "#a86600" },
+      "700": { "$value": "#7d4c00" },
+      "900": { "$value": "#33280f" }
+    },
+    "red": {
+      "50": { "$value": "#fcebe8" },
+      "100": { "$value": "#f6cdc7" },
+      "400": { "$value": "#f06a5f" },
+      "600": { "$value": "#c5352a" },
+      "700": { "$value": "#9a2a21" },
+      "900": { "$value": "#3a1a17" }
+    },
+    "indigo": {
+      "50": { "$value": "#eef0fe" },
+      "100": { "$value": "#dadefd" },
+      "300": { "$value": "#a8b0ff" },
+      "400": { "$value": "#8e99ff" },
+      "600": { "$value": "#4353d6" },
+      "700": { "$value": "#3341b0" },
+      "900": { "$value": "#23264a" }
+    },
+    "teal": {
+      "400": { "$value": "#4ccdab" },
+      "600": { "$value": "#0b7a63" }
+    },
+    "orange": {
+      "400": { "$value": "#f0905e" },
+      "600": { "$value": "#b8541a" }
+    }
+  },
+  "fontFamily": {
+    "$type": "fontFamily",
+    "inter": { "$value": "\"Inter\", ui-sans-serif, system-ui, -apple-system, sans-serif" },
+    "jetbrains": { "$value": "\"JetBrains Mono\", ui-monospace, SFMono-Regular, Menlo, monospace" }
+  }
+}

@@ -12,6 +12,8 @@
 import { readFileSync, writeFileSync, existsSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
+import { buildTokens } from "./tokens.mjs";
+import { lintDesign } from "./lint-design.mjs";
 
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
 const dir = process.argv[2];
@@ -60,12 +62,23 @@ if (problems.length) {
 delete graph.change.klar;
 writeFileSync(join(dir, "graph.json"), JSON.stringify(graph, null, 2) + "\n");
 
+// Design tokens: regenerate the CSS, check the viewer only uses tokens, then inline both.
+const { css: tokensCSS } = buildTokens();
+writeFileSync(join(root, "viewer/tokens.css"), tokensCSS);
+const designProblems = lintDesign();
+if (designProblems.length) {
+  console.error(designProblems.map((p) => "  ✗ " + p).join("\n"));
+  process.exit(1);
+}
+
 const template = readFileSync(join(root, "viewer/index.html"), "utf8");
 const embedded = JSON.stringify(graph).replace(/</g, "\\u003c");
-const page = template.replace(
-  '<script id="openarc-data" type="application/json"></script>',
-  `<script id="openarc-data" type="application/json">${embedded}</script>`,
-);
+const page = template
+  .replace('<link rel="stylesheet" href="tokens.css">', () => `<style>\n${tokensCSS}</style>`)
+  .replace(
+    '<script id="openarc-data" type="application/json"></script>',
+    () => `<script id="openarc-data" type="application/json">${embedded}</script>`,
+  );
 writeFileSync(join(dir, "index.html"), page);
 console.log(`✓ ${join(dir, "graph.json")}\n✓ ${join(dir, "index.html")}`);
 

@@ -1,0 +1,73 @@
+{
+  "$description": "Dark theme.",
+  "$extensions": { "openarc": { "name": "dark", "scheme": "dark" } },
+  "color": {
+    "$type": "color",
+    "canvas": {
+      "bg": { "$value": "{palette.neutral.950}" },
+      "dot": { "$value": "{palette.neutral.800}" }
+    },
+    "surface": {
+      "panel": { "$value": "{palette.neutral.925}" },
+      "card": { "$value": "{palette.neutral.900}" },
+      "sunken": { "$value": "{palette.neutral.850}" },
+      "hover": { "$value": "{palette.neutral.850}" },
+      "selected": { "$value": "{palette.indigo.900}" }
+    },
+    "border": {
+      "subtle": { "$value": "{palette.neutral.850}" },
+      "default": { "$value": "{palette.neutral.800}" },
+      "strong": { "$value": "{palette.neutral.750}" }
+    },
+    "text": {
+      "primary": { "$value": "{palette.neutral.100}" },
+      "secondary": { "$value": "{palette.neutral.200}" },
+      "tertiary": { "$value": "{palette.neutral.400}" },
+      "quaternary": { "$value": "{palette.neutral.500}" },
+      "on-accent": { "$value": "{palette.neutral.950}" }
+    },
+    "accent": {
+      "solid": { "$value": "{palette.indigo.400}" },
+      "text": { "$value": "{palette.indigo.300}" },
+      "subtle": { "$value": "{palette.indigo.900}" },
+      "rail": { "$value": "{palette.indigo.900}" }
+    },
+    "status": {
+      "added": {
+        "solid": { "$value": "{palette.green.400}" },
+        "text": { "$value": "{palette.green.400}" },
+        "subtle": { "$value": "{palette.green.900}" }
+      },
+      "changed": {
+        "solid": { "$value": "{palette.amber.400}" },
+        "text": { "$value": "{palette.amber.400}" },
+        "subtle": { "$value": "{palette.amber.900}" }
+      },
+      "removed": {
+        "solid": { "$value": "{palette.red.400}" },
+        "text": { "$value": "{palette.red.400}" },
+        "subtle": { "$value": "{palette.red.900}" }
+      },
+      "context": {
+        "solid": { "$value": "{palette.neutral.500}" },
+        "text": { "$value": "{palette.neutral.400}" },
+        "subtle": { "$value": "{palette.neutral.850}" }
+      }
+    },
+    "syntax": {
+      "control": { "$value": "{palette.indigo.300}" },
+      "declaration": { "$value": "{palette.indigo.400}" },
+      "name": { "$value": "{palette.teal.400}" },
+      "value": { "$value": "{palette.orange.400}" },
+      "verb": { "$value": "{palette.neutral.50}" },
+      "operator": { "$value": "{palette.neutral.500}" },
+      "effect": { "$value": "{palette.neutral.400}" },
+      "comment": { "$value": "{palette.neutral.500}" }
+    }
+  },
+  "shadow": {
+    "$type": "shadow",
+    "raised": { "$value": "0 1px 2px rgb(0 0 0 / 0.3), 0 6px 20px rgb(0 0 0 / 0.25)" },
+    "overlay": { "$value": "-12px 0 32px rgb(0 0 0 / 0.35)" }
+  }
+}

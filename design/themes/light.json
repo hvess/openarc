@@ -1,0 +1,73 @@
+{
+  "$description": "Light theme. Every theme defines exactly the same set of tokens; the build fails if one is missing.",
+  "$extensions": { "openarc": { "name": "light", "scheme": "light", "default": true } },
+  "color": {
+    "$type": "color",
+    "canvas": {
+      "bg": { "$value": "{palette.neutral.50}" },
+      "dot": { "$value": "{palette.neutral.200}" }
+    },
+    "surface": {
+      "panel": { "$value": "{palette.neutral.0}", "$description": "Sidebar, inspector, toolbars" },
+      "card": { "$value": "{palette.neutral.0}" },
+      "sunken": { "$value": "{palette.neutral.25}", "$description": "Context cards, code blocks" },
+      "hover": { "$value": "{palette.neutral.50}" },
+      "selected": { "$value": "{palette.indigo.50}" }
+    },
+    "border": {
+      "subtle": { "$value": "{palette.neutral.100}" },
+      "default": { "$value": "{palette.neutral.150}" },
+      "strong": { "$value": "{palette.neutral.200}" }
+    },
+    "text": {
+      "primary": { "$value": "{palette.neutral.900}" },
+      "secondary": { "$value": "{palette.neutral.700}" },
+      "tertiary": { "$value": "{palette.neutral.600}" },
+      "quaternary": { "$value": "{palette.neutral.500}" },
+      "on-accent": { "$value": "{palette.neutral.0}" }
+    },
+    "accent": {
+      "solid": { "$value": "{palette.indigo.600}" },
+      "text": { "$value": "{palette.indigo.600}" },
+      "subtle": { "$value": "{palette.indigo.50}" },
+      "rail": { "$value": "{palette.indigo.100}" }
+    },
+    "status": {
+      "added": {
+        "solid": { "$value": "{palette.green.600}" },
+        "text": { "$value": "{palette.green.700}" },
+        "subtle": { "$value": "{palette.green.50}" }
+      },
+      "changed": {
+        "solid": { "$value": "{palette.amber.600}" },
+        "text": { "$value": "{palette.amber.700}" },
+        "subtle": { "$value": "{palette.amber.50}" }
+      },
+      "removed": {
+        "solid": { "$value": "{palette.red.600}" },
+        "text": { "$value": "{palette.red.700}" },
+        "subtle": { "$value": "{palette.red.50}" }
+      },
+      "context": {
+        "solid": { "$value": "{palette.neutral.400}" },
+        "text": { "$value": "{palette.neutral.600}" },
+        "subtle": { "$value": "{palette.neutral.100}" }
+      }
+    },
+    "syntax": {
+      "control": { "$value": "{palette.indigo.600}" },
+      "declaration": { "$value": "{palette.indigo.600}" },
+      "name": { "$value": "{palette.teal.600}" },
+      "value": { "$value": "{palette.orange.600}" },
+      "verb": { "$value": "{palette.neutral.900}" },
+      "operator": { "$value": "{palette.neutral.500}" },
+      "effect": { "$value": "{palette.neutral.600}" },
+      "comment": { "$value": "{palette.neutral.500}" }
+    }
+  },
+  "shadow": {
+    "$type": "shadow",
+    "raised": { "$value": "0 1px 2px rgb(20 20 30 / 0.06), 0 4px 16px rgb(20 20 30 / 0.06)" },
+    "overlay": { "$value": "-12px 0 32px rgb(20 20 30 / 0.08)" }
+  }
+}

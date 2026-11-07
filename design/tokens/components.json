@@ -1,0 +1,124 @@
+{
+  "$description": "Component sizes. The diagram layout reads these at runtime, so CSS and layout can never disagree. Vertical sizes are multiples of grid.unit.",
+  "sidebar": {
+    "$type": "dimension",
+    "width": {
+      "$value": "320px"
+    }
+  },
+  "inspector": {
+    "$type": "dimension",
+    "width": {
+      "$value": "544px"
+    }
+  },
+  "control": {
+    "$type": "dimension",
+    "height": {
+      "$value": "32px"
+    },
+    "height-sm": {
+      "$value": "24px"
+    },
+    "icon": {
+      "$value": "16px"
+    }
+  },
+  "badge": {
+    "$type": "dimension",
+    "size": {
+      "$value": "20px",
+      "$description": "Flow step numbers"
+    },
+    "dot": {
+      "$value": "8px",
+      "$description": "Status dots"
+    }
+  },
+  "card": {
+    "$type": "dimension",
+    "width-min": {
+      "$value": "256px"
+    },
+    "width-max": {
+      "$value": "448px"
+    },
+    "padding-x": {
+      "$value": "{space.4}"
+    },
+    "padding-y": {
+      "$value": "{space.2}"
+    },
+    "head-height": {
+      "$value": "56px",
+      "$description": "padding-y + overline line + heading line + padding-y = 8 + 16 + 24 + 8"
+    },
+    "summary-height": {
+      "$value": "40px",
+      "$description": "Two caption lines (16px each) + padding-y"
+    },
+    "row-height": {
+      "$value": "32px"
+    },
+    "gutter": {
+      "$value": "12px",
+      "$description": "Width of the change mark column"
+    },
+    "kind": {
+      "$value": "40px",
+      "$description": "Width of the member kind column"
+    },
+    "stripe": {
+      "$value": "4px",
+      "$description": "Status stripe on the card's leading edge"
+    }
+  },
+  "diagram": {
+    "$type": "dimension",
+    "layer-gap": {
+      "$value": "96px",
+      "$description": "Horizontal space between columns of cards"
+    },
+    "node-gap": {
+      "$value": "32px",
+      "$description": "Vertical space between cards in a column"
+    },
+    "edge-gap": {
+      "$value": "4px",
+      "$description": "Space between an arrowhead and the card it points at"
+    },
+    "edge-width": {
+      "$value": "1.5px"
+    },
+    "edge-width-strong": {
+      "$value": "2.5px"
+    },
+    "flow-width": {
+      "$value": "3px"
+    },
+    "dot": {
+      "$value": "1.25px",
+      "$description": "Radius of a canvas grid dot"
+    },
+    "dash-inferred": {
+      "$type": "other",
+      "$value": "6 4",
+      "$description": "Dash pattern for edges not resolved from the code"
+    },
+    "dash-data": {
+      "$type": "other",
+      "$value": "1.5 4",
+      "$description": "Dash pattern for reads and writes"
+    },
+    "dash-flow": {
+      "$type": "other",
+      "$value": "2 7",
+      "$description": "Dash pattern for the animated flow path"
+    },
+    "dash-flow-period": {
+      "$type": "number",
+      "$value": 9,
+      "$description": "Sum of dash-flow; the animation moves by one period"
+    }
+  }
+}
