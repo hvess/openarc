@@ -37,6 +37,8 @@ Tokens use the [W3C Design Tokens format](https://tr.designtokens.org/format/): 
 
 The diagram layout reads card sizes from the component tokens, measures each card's content, rounds its width up to `grid.unit`, gives every card in a column the column's widest width, and snaps positions to the grid. Nothing on the canvas is placed by hand.
 
+Below `diagram.detail-zoom` (0.4), text is too small to read, so cards stop drawing it and keep only their shape and diff colours, and edges join up into one line per pair of cards. That keeps diagrams with a hundred or more components cheap to draw.
+
 ## Spacing
 
 `space.0` to `space.16` run on a 4px step: 0, 4, 8, 12, 16, 20, 24, 32, 40, 48, 64. The number is the multiple of 4, so `space.4` is 16px. Use these for padding, margins and gaps. If none fits, the layout needs rethinking, not a new value.

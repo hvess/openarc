@@ -164,6 +164,7 @@
   --diagram-dash-data: 1.5 4;
   --diagram-dash-flow: 2 7;
   --diagram-dash-flow-period: 9;
+  --diagram-detail-zoom: 0.4;
   --color-canvas-bg: oklch(0.974 0.004 275);
   --color-canvas-dot: oklch(0.887 0.01 275);
   --color-surface-panel: oklch(1 0 0);
@@ -492,13 +493,20 @@ p, h1, h2, h3 { margin: 0; }
 .tag { display: inline-flex; align-items: center; height: var(--type-code-meta-line); padding: 0 var(--space-1); border-radius: var(--radius-xs); color: var(--color-text-tertiary); outline: var(--border-width) solid var(--color-border-default); outline-offset: calc(-1 * var(--border-width)); }
 
 /* ---------- canvas ---------- */
-#stage { position: relative; overflow: hidden; cursor: grab; touch-action: none; user-select: none; -webkit-user-select: none;
+#stage { position: relative; overflow: clip; cursor: grab; touch-action: none; user-select: none; -webkit-user-select: none; }
+/* The dot grid is its own layer and only moves by less than one tile, so panning never repaints it. */
+#grid { position: absolute; left: 0; top: 0; pointer-events: none; will-change: transform;
   background-image: radial-gradient(circle, var(--color-canvas-dot) var(--diagram-dot), transparent calc(var(--diagram-dot) * 1.25)); }
+#loading { position: absolute; inset: 0; display: grid; place-items: center; color: var(--color-text-tertiary); pointer-events: none; }
 #stage.dragging { cursor: grabbing; }
-#world { position: absolute; left: 0; top: 0; transform-origin: 0 0; }
-#edges { position: absolute; left: 0; top: 0; overflow: visible; pointer-events: none; }
+/* The world is one composited layer: panning and zooming move pixels the GPU already has. */
+#world { position: absolute; left: 0; top: 0; transform-origin: 0 0; will-change: transform; }
+/* Edges are a bitmap painted by a worker and moved with the view. Dimming fades the whole
+   canvas; emphasis (hover, selection, flows) is drawn on #overlay, its own small layer. */
+#edges { position: absolute; left: 0; top: 0; transform-origin: 0 0; pointer-events: none; will-change: transform; transition: opacity var(--motion-duration-base); }
+#overlay { position: absolute; left: 0; top: 0; overflow: visible; pointer-events: none; will-change: transform; }
 
-.card { position: absolute; display: flex; flex-direction: column; background: var(--color-surface-card); border-radius: var(--radius-lg); outline: var(--border-width) solid var(--color-border-default); outline-offset: calc(-1 * var(--border-width)); box-shadow: var(--shadow-raised); overflow: hidden; transition: opacity var(--motion-duration-base); }
+.card { position: absolute; display: flex; flex-direction: column; background: var(--color-surface-card); border-radius: var(--radius-lg); outline: var(--border-width) solid var(--color-border-default); outline-offset: calc(-1 * var(--border-width)); box-shadow: var(--shadow-raised); overflow: hidden; content-visibility: auto; }
 .card.s-context { background: var(--color-surface-sunken); box-shadow: none; }
 .card.selc { box-shadow: 0 0 0 var(--border-width-strong) var(--color-accent-solid), var(--shadow-raised); }
 .card-head { flex: none; height: var(--card-head-height); padding: var(--card-padding-y) var(--card-padding-x); cursor: pointer; }
@@ -534,14 +542,14 @@ p, h1, h2, h3 { margin: 0; }
 .step { display: none; align-items: center; justify-content: center; flex: none; width: var(--badge-size); height: var(--badge-size); margin-left: auto; border-radius: var(--radius-full); background: var(--color-accent-solid); color: var(--color-text-on-accent); }
 .step.on { display: inline-flex; }
 
-.edge-g { color: var(--color-status-context-solid); transition: opacity var(--motion-duration-base); }
+.edge-g { color: var(--color-status-context-solid); }
 .edge-g.st-added { color: var(--color-status-added-solid); }
 .edge-g.st-changed { color: var(--color-status-changed-solid); }
 .edge-g.st-removed { color: var(--color-status-removed-solid); }
-.edge { fill: none; stroke: currentColor; stroke-width: var(--diagram-edge-width); stroke-linecap: round; transition: stroke-width var(--motion-duration-fast); }
+.edge { fill: none; stroke: currentColor; stroke-width: var(--diagram-edge-width); stroke-linecap: round; }
 .edge-g.inferred .edge { stroke-dasharray: var(--diagram-dash-inferred); stroke-linecap: butt; }
 .edge-g.k-reads .edge, .edge-g.k-writes .edge { stroke-dasharray: var(--diagram-dash-data); }
-.head { fill: currentColor; stroke: currentColor; stroke-width: var(--border-width); stroke-linejoin: round; transform-box: view-box; transform-origin: 0 0; transition: transform var(--motion-duration-fast); }
+.head { fill: currentColor; stroke: currentColor; stroke-width: var(--border-width); stroke-linejoin: round; transform-box: view-box; transform-origin: 0 0; }
 .edge-g.k-creates .edge, .edge-g.hov .edge, .edge-g.hl .edge { stroke-width: var(--diagram-edge-width-strong); }
 .edge-g.k-creates .head, .edge-g.hov .head, .edge-g.hl .head { transform: scale(var(--diagram-arrow-scale-strong)); }
 .flowpath { fill: none; stroke: var(--color-accent-solid); stroke-width: var(--diagram-flow-width); stroke-linecap: round; stroke-dasharray: var(--diagram-dash-flow); animation: march var(--motion-duration-slow) linear infinite; }
@@ -551,7 +559,11 @@ p, h1, h2, h3 { margin: 0; }
 
 .focus .card:not(.hl) { opacity: var(--opacity-dimmed); }
 .focus .card.hl .row:not(.hl) { opacity: var(--opacity-dimmed-row); }
-.focus .edge-g:not(.hl) { opacity: var(--opacity-dimmed-edge); }
+.focus #edges { opacity: var(--opacity-dimmed-edge); }
+
+/* Far out, text is too small to read: skip drawing it and keep the card's shape and colours. */
+#world.far .card { box-shadow: none; }
+#world.far .card-meta, #world.far .card-sum, #world.far .row > * { visibility: hidden; }
 
 .zoombar { position: absolute; right: var(--space-4); bottom: var(--space-4); z-index: var(--layer-canvas-controls); display: flex; align-items: center; height: var(--control-height); background: var(--color-surface-panel); border-radius: var(--radius-md); outline: var(--border-width) solid var(--color-border-default); outline-offset: calc(-1 * var(--border-width)); box-shadow: var(--shadow-raised); overflow: hidden; transition: right var(--motion-duration-base) var(--motion-easing-standard); }
 #app.inspecting .zoombar { right: calc(var(--inspector-width) + var(--space-4)); }
@@ -636,7 +648,10 @@ pre.code .no { display: inline-block; width: var(--space-10); padding-right: var
 <div id="app">
   <aside id="side"></aside>
   <main id="stage">
-    <div id="world"><svg id="edges"></svg><div id="nodes"></div></div>
+    <div id="grid"></div>
+    <canvas id="edges"></canvas>
+    <div id="world"><svg id="overlay"></svg><div id="nodes"></div></div>
+    <div id="loading" class="type-label">Laying out the diagram…</div>
     <button id="sideToggle" class="type-label" type="button">Overview</button>
     <div class="zoombar">
       <button type="button" data-z="out" aria-label="Zoom out">−</button>
@@ -805,33 +820,60 @@ for (const e of edges) {
   edgeKeys.add(a + ">" + b);
   elkEdges.push({ id: "e" + elkEdges.length, sources: ["c:" + a], targets: ["c:" + b] });
 }
-const elk = new ELK();
-const layout = () => elk.layout({
+// ELK runs in a worker so the page stays responsive while a large diagram is laid out.
+// If the worker cannot start (offline, or a browser that refuses it), it runs here instead.
+const ELK_WORKER = "https://cdn.jsdelivr.net/npm/elkjs@0.9.3/lib/elk-worker.min.js";
+async function runLayout(graph) {
+  try {
+    const url = URL.createObjectURL(new Blob([`importScripts(${JSON.stringify(ELK_WORKER)});`], { type: "text/javascript" }));
+    let fail;
+    const failed = new Promise((_, reject) => (fail = reject));
+    const elk = new ELK({ workerFactory: () => { const w = new Worker(url); w.addEventListener("error", fail); return w; } });
+    const result = await Promise.race([elk.layout(graph), failed]);
+    elk.terminateWorker();
+    return result;
+  } catch {
+    return new ELK().layout(graph);
+  }
+}
+const big = G.components.length > 40;
+const laid = await runLayout({
   id: "root",
   layoutOptions: {
     "elk.algorithm": "layered", "elk.direction": "RIGHT",
     "elk.layered.spacing.nodeNodeBetweenLayers": String(L.layerGap), "elk.spacing.nodeNode": String(L.nodeGap),
     "elk.layered.spacing.edgeNodeBetweenLayers": String(L.nodeGap), "elk.padding": `[top=${L.margin},left=${L.margin},bottom=${L.margin},right=${L.margin}]`,
     "elk.layered.nodePlacement.strategy": "BRANDES_KOEPF", "elk.spacing.componentComponent": String(L.layerGap),
-    "elk.layered.considerModelOrder.strategy": "NODES_AND_EDGES",
+    // Keeping the graph's own order makes small diagrams stable and readable, but costs
+    // about five times the layout time; on big graphs ELK orders freely and sweeps less.
+    "elk.layered.considerModelOrder.strategy": big ? "NONE" : "NODES_AND_EDGES",
+    "elk.layered.thoroughness": big ? "3" : "7",
   },
   children: G.components.map((c) => ({ id: "c:" + c.id, width: widths.get(c.id), height: cardH(c) })),
   edges: elkEdges,
 });
-// Pass 1 finds the columns; every card in a column then takes the column's widest width.
-let laid = await layout();
-const columns = new Map();
-for (const n of laid.children) {
-  const x = Math.round(n.x);
-  columns.set(x, Math.max(columns.get(x) || 0, widths.get(n.id.slice(2))));
+$("#loading").remove();
+
+// Every card in a column takes the column's widest width. Columns are found by
+// overlapping x ranges; widening one shifts the columns to its right by the same amount.
+const placed = laid.children.map((n) => ({ id: n.id.slice(2), x: n.x, y: n.y, w: widths.get(n.id.slice(2)) })).sort((a, b) => a.x - b.x);
+const columns = [];
+for (const n of placed) {
+  const col = columns.at(-1);
+  if (col && n.x < col.right) { col.items.push(n); col.right = Math.max(col.right, n.x + n.w); }
+  else columns.push({ left: n.x, right: n.x + n.w, items: [n] });
 }
-for (const n of laid.children) widths.set(n.id.slice(2), columns.get(Math.round(n.x)));
-laid = await layout();
+let shift = 0;
+for (const col of columns) {
+  const w = Math.max(...col.items.map((n) => n.w));
+  for (const n of col.items) { n.x = col.left + shift; widths.set(n.id, w); }
+  shift += w - (col.right - col.left);
+}
 
 const pos = {};
 const nodesEl = $("#nodes");
-nodesEl.innerHTML = laid.children.map((n) => {
-  const c = comps.get(n.id.slice(2));
+nodesEl.innerHTML = placed.map((n) => {
+  const c = comps.get(n.id);
   const p = (pos[c.id] = { x: snap(n.x), y: snap(n.y), w: widths.get(c.id), h: cardH(c) });
   return `
     <div class="card s-${c.status}" data-c="${esc(c.id)}" style="left:${p.x}px;top:${p.y}px;width:${p.w}px;height:${p.h}px">
@@ -847,7 +889,7 @@ nodesEl.innerHTML = laid.children.map((n) => {
         </li>`).join("")}</ul>
     </div>`;
 }).join("");
-const worldW = laid.width, worldH = laid.height;
+const worldW = laid.width + shift, worldH = laid.height;
 
 // ---------- edges ----------
 // Every edge leaves and enters a card horizontally. The line stops at the arrowhead's
@@ -883,23 +925,179 @@ function pathBetween(from, to) {
   return curve(a, xm, xm, b);
 }
 const headAt = (p) => `<g transform="translate(${p.tip.x},${p.tip.y}) rotate(${p.dir > 0 ? 0 : 180})"><path class="head" d="${HEAD}"/></g>`;
-const svg = $("#edges");
-svg.setAttribute("width", worldW); svg.setAttribute("height", worldH);
-svg.innerHTML = `<g id="edgeLayer">${edges.map((e) => {
-  const p = pathBetween(e.from, e.to);
-  return `<g class="edge-g st-${e.status} k-${e.kind}${e.resolution !== "static" ? " inferred" : ""}" data-i="${e.i}"><title>${esc(e.kind)}${e.label ? " — " + esc(e.label) : ""}</title><path class="edge" d="${p.d}"/>${headAt(p)}</g>`;
-}).join("")}</g><g id="flowLayer"></g>`;
-const edgeEls = $$(".edge-g", svg);
+const edgeHTML = (e, p, cls = "") =>
+  `<g class="edge-g st-${e.status} k-${e.kind}${e.resolution !== "static" ? " inferred" : ""}${cls}"><path class="edge" d="${p.d}"/>${headAt(p)}</g>`;
+const paths = edges.map((e) => pathBetween(e.from, e.to));
+const edgeMarkup = (i, cls) => edgeHTML(edges[i], paths[i], " " + cls);
+// Far out, member edges are replaced by one edge per pair of cards, in the strongest status among them.
+const RANK = { added: 3, removed: 2, changed: 1, context: 0 };
+const pairs = new Map();
+for (const e of edges) {
+  const a = compOf(e.from)?.id, b = compOf(e.to)?.id;
+  if (!a || !b || a === b) continue;
+  const k = a + ">" + b, prev = pairs.get(k);
+  if (!prev || RANK[e.status] > RANK[prev.status]) pairs.set(k, { from: a, to: b, status: e.status, kind: "calls", resolution: "static" });
+}
+const overlay = $("#overlay");
+overlay.setAttribute("width", worldW); overlay.setAttribute("height", worldH);
+overlay.innerHTML = `<g id="hlLayer"></g><g id="hovLayer"></g><g id="flowLayer"></g>`;
+const hlLayer = $("#hlLayer"), hovLayer = $("#hovLayer");
 
-// ---------- pan / zoom ----------
 const stage = $("#stage"), world = $("#world");
 const T = { x: 0, y: 0, k: 1 };
+// Base edges are painted off the main thread. A worker draws the edges in view, plus a wide
+// margin, into one bitmap; each frame the page only moves and scales that bitmap. A new one is
+// painted only when the view leaves the painted area, or once zooming stops so lines are sharp.
+// paint() runs in the worker, or here when a worker cannot start; it must be self-contained.
+function paint(ctx, job, lines, ink, head) {
+  const { t, w, h, dpr, mx, my } = job;
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+  ctx.setTransform(dpr * t.k, 0, 0, dpr * t.k, dpr * (t.x + mx), dpr * (t.y + my));
+  const vx0 = (-mx - t.x) / t.k, vy0 = (-my - t.y) / t.k, vx1 = vx0 + (w + 2 * mx) / t.k, vy1 = vy0 + (h + 2 * my) / t.k;
+  ctx.lineJoin = "round";
+  for (const q of lines) {
+    if (q.x1 < vx0 || q.x0 > vx1 || q.y1 < vy0 || q.y0 > vy1) continue;
+    ctx.strokeStyle = ctx.fillStyle = ink.color[q.st] || ink.color.context;
+    ctx.lineWidth = q.strong ? ink.strong : ink.width;
+    ctx.lineCap = q.inferred ? "butt" : "round";
+    ctx.setLineDash(q.data ? ink.data : q.inferred ? ink.inferred : []);
+    ctx.stroke(q.path);
+    ctx.setLineDash([]);
+    ctx.save();
+    ctx.translate(q.tx, q.ty);
+    if (q.dir < 0) ctx.rotate(Math.PI);
+    if (q.strong) ctx.scale(ink.headScale, ink.headScale);
+    ctx.lineWidth = ink.border;
+    ctx.fill(head); ctx.stroke(head);
+    ctx.restore();
+  }
+}
+function line(e, p) {
+  const n = p.d.match(/-?\d*\.?\d+(?:e-?\d+)?/g).map(Number), xs = n.filter((_, i) => i % 2 === 0), ys = n.filter((_, i) => i % 2), m = AR.len * 2;
+  return {
+    d: p.d, tx: p.tip.x, ty: p.tip.y, dir: p.dir, st: e.status, strong: e.kind === "creates", inferred: e.resolution !== "static",
+    data: e.kind === "reads" || e.kind === "writes", x0: Math.min(...xs) - m, x1: Math.max(...xs) + m, y0: Math.min(...ys) - m, y1: Math.max(...ys) + m,
+  };
+}
+const LINES = { member: edges.map((e, i) => line(e, paths[i])), card: [...pairs.values()].map((e) => line(e, pathBetween(e.from, e.to))) };
+function readInk() {
+  const v = (n) => getComputedStyle(document.documentElement).getPropertyValue("--" + n).trim();
+  const dash = (n) => v(n).split(/[\s,]+/).map(parseFloat).filter((x) => !isNaN(x));
+  return {
+    color: Object.fromEntries(["added", "changed", "removed", "context"].map((st) => [st, v(`color-status-${st}-solid`)])),
+    width: size("diagram-edge-width"), strong: size("diagram-edge-width-strong"), headScale: size("diagram-arrow-scale-strong"),
+    border: size("border-width"), inferred: dash("diagram-dash-inferred"), data: dash("diagram-dash-data"),
+  };
+}
+const WORKER_SRC = `const paint = ${paint.toString()};
+let lines, ink, head;
+const withPaths = (list) => list.map((q) => ({ ...q, path: new Path2D(q.d) }));
+onmessage = ({ data: m }) => {
+  if (m.lines) { lines = { member: withPaths(m.lines.member), card: withPaths(m.lines.card) }; head = new Path2D(m.head); }
+  if (m.ink) ink = m.ink;
+  if (!m.job) return;
+  const j = m.job, c = new OffscreenCanvas(Math.max(1, Math.round((j.w + 2 * j.mx) * j.dpr)), Math.max(1, Math.round((j.h + 2 * j.my) * j.dpr)));
+  paint(c.getContext("2d"), j, j.far ? lines.card : lines.member, ink, head);
+  const bitmap = c.transferToImageBitmap();
+  postMessage({ job: j, bitmap }, [bitmap]);
+};`;
+const edgeCanvas = $("#edges"), bitmapCtx = edgeCanvas.getContext("bitmaprenderer");
+let painter = null, busy = false, dirty = false, shown = null, fallbackTimer = 0;
+try {
+  if (typeof OffscreenCanvas === "undefined") throw new Error("no OffscreenCanvas");
+  painter = new Worker(URL.createObjectURL(new Blob([WORKER_SRC], { type: "text/javascript" })));
+  painter.addEventListener("error", () => { painter = null; busy = false; requestEdges(); });
+  painter.addEventListener("message", ({ data }) => {
+    busy = false;
+    show(data.job, data.bitmap);
+    if (dirty) { dirty = false; if (!covered() || (zoomSettled && shown.t.k !== T.k)) requestEdges(); }
+  });
+  painter.postMessage({ lines: LINES, head: HEAD, ink: readInk() });
+} catch { painter = null; }
+const fallback = { ink: readInk(), head: new Path2D(HEAD), lines: { member: LINES.member.map((q) => ({ ...q, path: new Path2D(q.d) })), card: LINES.card.map((q) => ({ ...q, path: new Path2D(q.d) })) } };
+// How far beyond the view the edge bitmap reaches, as a share of the view. Bigger means fewer
+// repaints while panning; smaller means each repaint is quicker.
+const EDGE_MARGIN = 0.25;
+function edgeJob() {
+  const r = stage.getBoundingClientRect();
+  return { t: { ...T }, w: r.width, h: r.height, dpr: devicePixelRatio || 1, mx: Math.round(r.width * EDGE_MARGIN), my: Math.round(r.height * EDGE_MARGIN), far: world.classList.contains("far") };
+}
+// True while the painted bitmap still covers the whole view at the current detail level.
+function covered() {
+  if (!shown || shown.far !== world.classList.contains("far")) return false;
+  const r = stage.getBoundingClientRect(), j = shown;
+  const px0 = (-j.mx - j.t.x) / j.t.k, py0 = (-j.my - j.t.y) / j.t.k, px1 = px0 + (j.w + 2 * j.mx) / j.t.k, py1 = py0 + (j.h + 2 * j.my) / j.t.k;
+  const vx0 = -T.x / T.k, vy0 = -T.y / T.k, vx1 = vx0 + r.width / T.k, vy1 = vy0 + r.height / T.k;
+  return vx0 >= px0 && vy0 >= py0 && vx1 <= px1 && vy1 <= py1;
+}
+function requestEdges() {
+  if (painter) {
+    if (busy) { dirty = true; return; }
+    busy = true; dirty = false;
+    painter.postMessage({ job: edgeJob() });
+    return;
+  }
+  // No worker: draw on this thread, but only once movement has stopped.
+  clearTimeout(fallbackTimer);
+  fallbackTimer = setTimeout(async () => {
+    const j = edgeJob(), c = document.createElement("canvas");
+    c.width = Math.round((j.w + 2 * j.mx) * j.dpr); c.height = Math.round((j.h + 2 * j.my) * j.dpr);
+    paint(c.getContext("2d"), j, j.far ? fallback.lines.card : fallback.lines.member, fallback.ink, fallback.head);
+    show(j, await createImageBitmap(c));
+  }, 120);
+}
+function show(job, bitmap) {
+  bitmapCtx.transferFromImageBitmap(bitmap);
+  edgeCanvas.style.left = -job.mx + "px"; edgeCanvas.style.top = -job.my + "px";
+  edgeCanvas.style.width = job.w + 2 * job.mx + "px"; edgeCanvas.style.height = job.h + 2 * job.my + "px";
+  shown = job;
+  placeEdges();
+}
+// Map the bitmap, drawn at shown.t, onto the current view T.
+function placeEdges() {
+  if (!shown) return;
+  const s = T.k / shown.t.k, a = T.x + shown.mx - s * (shown.t.x + shown.mx), b = T.y + shown.my - s * (shown.t.y + shown.my);
+  edgeCanvas.style.transform = `translate(${a}px,${b}px) scale(${s})`;
+}
+matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => {
+  const ink = readInk();
+  fallback.ink = ink;
+  painter?.postMessage({ ink });
+  requestEdges();
+});
+
+// ---------- pan / zoom ----------
+// Input can arrive faster than the screen refreshes; apply() coalesces it into one write per frame.
+const grid = $("#grid"), pct = $(".pct"), detailZoom = size("diagram-detail-zoom");
+let queued = false, lastK = null, settle = 0, wasFar = false, zoomSettled = true;
 function apply() {
+  if (!queued) { queued = true; requestAnimationFrame(render); }
+}
+function render() {
+  queued = false;
   world.style.transform = `translate(${T.x}px,${T.y}px) scale(${T.k})`;
-  const s = L.canvas * T.k;
-  stage.style.backgroundSize = `${s}px ${s}px`;
-  stage.style.backgroundPosition = `${T.x - s / 2}px ${T.y - s / 2}px`;
-  $(".pct").textContent = Math.round(T.k * 100) + "%";
+  const s = L.canvas * T.k, mod = (v) => (((v - s / 2) % s) + s) % s;
+  grid.style.transform = `translate(${mod(T.x) - s}px,${mod(T.y) - s}px)`;
+  placeEdges();
+  if (!covered()) requestEdges();
+  if (T.k !== lastK) {
+    lastK = T.k;
+    grid.style.width = `calc(100% + ${2 * s}px)`; grid.style.height = `calc(100% + ${2 * s}px)`;
+    grid.style.backgroundSize = `${s}px ${s}px`;
+    pct.textContent = Math.round(T.k * 100) + "%";
+    // The GPU layer keeps the scale it was drawn at, so text blurs while zooming. Once zooming
+    // stops, switch detail level and redraw the layer sharp, together, in one pass.
+    clearTimeout(settle);
+    zoomSettled = false;
+    settle = setTimeout(() => {
+      zoomSettled = true;
+      if (world.classList.toggle("far", T.k < detailZoom) !== wasFar) wasFar = !wasFar;
+      if (!covered() || shown.t.k !== T.k) requestEdges();
+      world.style.willChange = "auto";
+      requestAnimationFrame(() => requestAnimationFrame(() => (world.style.willChange = "")));
+    }, 150);
+  }
 }
 const clampK = (k) => Math.min(2.5, Math.max(0.2, k));
 function zoomAt(cx, cy, f) {
@@ -910,7 +1108,7 @@ function animateTo(tx, ty, tk, ms = L.slow) {
   const s = { ...T }, t0 = performance.now();
   const step = (t) => {
     const p = Math.min(1, (t - t0) / ms), e = 1 - Math.pow(1 - p, 3);
-    T.x = s.x + (tx - s.x) * e; T.y = s.y + (ty - s.y) * e; T.k = s.k + (tk - s.k) * e; apply();
+    T.x = s.x + (tx - s.x) * e; T.y = s.y + (ty - s.y) * e; T.k = s.k + (tk - s.k) * e; render();
     if (p < 1) requestAnimationFrame(step);
   };
   requestAnimationFrame(step);
@@ -924,7 +1122,7 @@ function fit(animate = true) {
   const v = visibleRect();
   const k = clampK(Math.min((v.w - L.margin) / worldW, (v.h - L.margin) / worldH, 1));
   const x = (v.w - worldW * k) / 2, y = (v.h - worldH * k) / 2;
-  animate ? animateTo(x, y, k) : (Object.assign(T, { x, y, k }), apply());
+  animate ? animateTo(x, y, k) : (Object.assign(T, { x, y, k }), render());
 }
 function focusIds(ids) {
   const ps = ids.map((id) => pos[compOf(id)?.id]).filter(Boolean);
@@ -1012,8 +1210,8 @@ function highlight() {
     const id = el.dataset.id, isRow = el.classList.contains("row");
     el.classList.toggle("hl", nodes.has(id) || (isRow && comps.has(S.sel) && compOf(id).id === S.sel));
     el.classList.toggle("sel", isRow && id === S.sel);
-    const st = el.querySelector(".step");
-    st.textContent = steps.get(id) || "";
+    const st = el.querySelector(".step"), n = String(steps.get(id) || "");
+    if (st.textContent !== n) st.textContent = n;
     st.classList.toggle("on", steps.has(id));
   }
   for (const el of cardEls) {
@@ -1021,7 +1219,7 @@ function highlight() {
     el.classList.toggle("hl", nodes.has(c.id) || c.members.some((m) => nodes.has(m.id)));
     el.classList.toggle("selc", S.sel === c.id);
   }
-  edgeEls.forEach((el) => el.classList.toggle("hl", hlEdges.has(+el.dataset.i)));
+  hlLayer.innerHTML = [...hlEdges].map((i) => edgeMarkup(i, "hl")).join("");
   $$(".flow").forEach((b) => b.classList.toggle("on", b.dataset.flow === S.flow));
   $$(".note[data-note]", side).forEach((b) => b.classList.toggle("on", +b.dataset.note === S.note));
 }
@@ -1046,12 +1244,16 @@ stage.addEventListener("click", (e) => {
   if (moved || e.target.closest("[data-id], #drawer, .zoombar, #sideToggle")) return;
   S.flow = null; S.note = null; select(null);
 });
-nodesEl.addEventListener("pointerover", (e) => {
-  const id = e.target.closest("[data-id]")?.dataset.id;
-  const rel = id ? new Set(relatedEdges(id).map((x) => x.i)) : new Set();
-  edgeEls.forEach((el) => el.classList.toggle("hov", rel.has(+el.dataset.i)));
-});
-nodesEl.addEventListener("pointerleave", () => edgeEls.forEach((el) => el.classList.remove("hov")));
+// Hover draws the related edges again, thicker, on the overlay. Nothing else is restyled,
+// and nothing happens while the canvas is being dragged across cards.
+let hovId = null;
+function hover(id) {
+  if (id === hovId) return;
+  hovId = id;
+  hovLayer.innerHTML = id ? relatedEdges(id).map((e) => edgeMarkup(e.i, "hov")).join("") : "";
+}
+nodesEl.addEventListener("pointerover", (e) => { if (!(drag && moved)) hover(e.target.closest("[data-id]")?.dataset.id ?? null); });
+nodesEl.addEventListener("pointerleave", () => hover(null));
 
 side.addEventListener("click", (e) => {
   const f = e.target.closest("[data-flow]"), n = e.target.closest("[data-note]");

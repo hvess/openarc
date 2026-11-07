@@ -154,6 +154,7 @@
   --diagram-dash-data: 1.5 4;
   --diagram-dash-flow: 2 7;
   --diagram-dash-flow-period: 9;
+  --diagram-detail-zoom: 0.4;
   --color-canvas-bg: oklch(0.974 0.004 275);
   --color-canvas-dot: oklch(0.887 0.01 275);
   --color-surface-panel: oklch(1 0 0);

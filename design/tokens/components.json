@@ -141,6 +141,11 @@
       "$type": "number",
       "$value": 9,
       "$description": "Sum of dash-flow; the animation moves by one period"
+    },
+    "detail-zoom": {
+      "$type": "number",
+      "$value": 0.4,
+      "$description": "Below this zoom, cards drop their text and edges join up per card, so large diagrams stay cheap to draw"
     }
   }
 }
