@@ -1,0 +1,706 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>OpenArc</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #f4f4f1; --dot: #d9d9d3; --panel: #ffffff; --card: #ffffff; --raise: #fafaf8;
+  --ink: #18191c; --ink-2: #3d3f45; --muted: #6c6f77; --faint: #9b9ea6; --line: #e4e4df; --line-2: #d4d4ce;
+  --add: #1a8f4c; --add-bg: #e7f5ec; --chg: #b26d00; --chg-bg: #fbf0dc; --del: #c9372c; --del-bg: #fbe9e7;
+  --ctx: #8d9098; --ctx-bg: #f0f0ed; --accent: #4353d6; --accent-bg: #eceefd;
+  --shadow: 0 1px 2px rgb(20 20 30 / 0.06), 0 4px 16px rgb(20 20 30 / 0.06);
+  --mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  --sans: "Inter", ui-sans-serif, system-ui, -apple-system, sans-serif;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0f1012; --dot: #26282d; --panel: #16171a; --card: #1b1c20; --raise: #202126;
+    --ink: #ececee; --ink-2: #c9cad0; --muted: #9a9da6; --faint: #6d7079; --line: #2a2c31; --line-2: #34363c;
+    --add: #43c97f; --add-bg: #15301f; --chg: #e3a643; --chg-bg: #33280f; --del: #f06a5f; --del-bg: #3a1a17;
+    --ctx: #7c7f88; --ctx-bg: #1f2024; --accent: #8e99ff; --accent-bg: #23264a;
+    --shadow: 0 1px 2px rgb(0 0 0 / 0.3), 0 6px 20px rgb(0 0 0 / 0.25);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0f1012; --dot: #26282d; --panel: #16171a; --card: #1b1c20; --raise: #202126;
+  --ink: #ececee; --ink-2: #c9cad0; --muted: #9a9da6; --faint: #6d7079; --line: #2a2c31; --line-2: #34363c;
+  --add: #43c97f; --add-bg: #15301f; --chg: #e3a643; --chg-bg: #33280f; --del: #f06a5f; --del-bg: #3a1a17;
+  --ctx: #7c7f88; --ctx-bg: #1f2024; --accent: #8e99ff; --accent-bg: #23264a;
+  --shadow: 0 1px 2px rgb(0 0 0 / 0.3), 0 6px 20px rgb(0 0 0 / 0.25);
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; }
+body { background: var(--bg); color: var(--ink); font: 14px/1.5 var(--sans); -webkit-font-smoothing: antialiased; overflow: hidden; }
+button { font: inherit; color: inherit; }
+#app { display: grid; grid-template-columns: 340px 1fr; height: 100vh; height: 100dvh; }
+
+/* ---------- side panel ---------- */
+#side { background: var(--panel); border-right: 1px solid var(--line); overflow-y: auto; padding: 20px 20px 28px; display: flex; flex-direction: column; gap: 22px; z-index: 3; }
+.brand { display: flex; align-items: center; gap: 8px; font-weight: 600; font-size: 13px; letter-spacing: -0.01em; }
+.brand svg { width: 20px; height: 20px; color: var(--accent); }
+.brand .ver { margin-left: auto; font: 500 11px var(--mono); color: var(--faint); }
+#side h1 { font-size: 19px; line-height: 1.3; letter-spacing: -0.02em; margin: 0 0 8px; font-weight: 650; }
+.summary { color: var(--ink-2); margin: 0; font-size: 13.5px; }
+.stats { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 12px; }
+.stat { font: 500 12px var(--mono); padding: 2px 8px; border-radius: 6px; }
+.stat.s-added { color: var(--add); background: var(--add-bg); }
+.stat.s-changed { color: var(--chg); background: var(--chg-bg); }
+.stat.s-removed { color: var(--del); background: var(--del-bg); }
+.sec h2 { font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); margin: 0 0 8px; font-weight: 600; }
+.flow { display: block; width: 100%; text-align: left; background: none; border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; margin-bottom: 8px; cursor: pointer; transition: border-color .15s, background .15s; }
+.flow:hover { border-color: var(--line-2); background: var(--raise); }
+.flow .fn { font-weight: 600; font-size: 13.5px; display: flex; gap: 8px; align-items: baseline; }
+.flow .fn small { margin-left: auto; color: var(--faint); font: 500 11px var(--mono); }
+.flow .fd { display: none; color: var(--ink-2); font-size: 13px; margin-top: 4px; }
+.flow.on { border-color: var(--accent); background: var(--accent-bg); }
+.flow.on .fd { display: block; }
+.note { display: block; width: 100%; text-align: left; background: none; border: 0; border-left: 2px solid var(--line-2); padding: 4px 0 4px 12px; margin-bottom: 10px; cursor: pointer; font-size: 13px; color: var(--ink-2); }
+.note .nk { display: block; font: 600 10.5px var(--sans); text-transform: uppercase; letter-spacing: .07em; margin-bottom: 2px; }
+.note.k-risk { border-color: var(--del); } .note.k-risk .nk { color: var(--del); }
+.note.k-behaviour { border-color: var(--chg); } .note.k-behaviour .nk { color: var(--chg); }
+.note.k-note .nk { color: var(--muted); }
+.note:hover { color: var(--ink); }
+.note.on { color: var(--ink); background: var(--raise); }
+.legend { margin-top: auto; display: grid; grid-template-columns: 1fr 1fr; gap: 6px 12px; font-size: 12px; color: var(--muted); }
+.legend span { display: flex; align-items: center; gap: 8px; }
+.legend svg { width: 26px; height: 8px; flex: none; }
+.legend i { width: 10px; height: 10px; border-radius: 3px; flex: none; }
+
+/* ---------- stage ---------- */
+#stage { position: relative; overflow: hidden; cursor: grab; touch-action: none; user-select: none; -webkit-user-select: none;
+  background-image: radial-gradient(var(--dot) 1.1px, transparent 1.3px); }
+#stage.dragging { cursor: grabbing; }
+#world { position: absolute; left: 0; top: 0; transform-origin: 0 0; }
+#edges { position: absolute; left: 0; top: 0; overflow: visible; pointer-events: none; }
+.group { position: absolute; border: 1px dashed var(--line-2); border-radius: 18px; }
+.group > span { position: absolute; top: 12px; left: 18px; font: 500 12px var(--mono); color: var(--faint); }
+
+.card { position: absolute; background: var(--card); border: 1px solid var(--line); border-radius: 12px; box-shadow: var(--shadow); overflow: hidden; transition: opacity .2s; }
+.card::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; }
+.card.s-added::before { background: var(--add); }
+.card.s-changed::before { background: var(--chg); }
+.card.s-removed::before { background: var(--del); }
+.card.s-context { background: var(--raise); border-style: dashed; box-shadow: none; }
+.card-head { height: 56px; padding: 9px 14px 0 16px; cursor: pointer; }
+.card-head .kind { font: 500 10.5px var(--mono); color: var(--faint); letter-spacing: .02em; display: flex; gap: 8px; align-items: center; }
+.card-head .kind .path { color: var(--faint); opacity: .8; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+.card-head .kind .pill { margin-left: auto; flex: none; }
+.card-head .cname { display: block; font-weight: 650; font-size: 15.5px; letter-spacing: -0.015em; margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.card.s-context .cname { color: var(--ink-2); font-weight: 600; }
+.pill { font: 600 10px var(--sans); text-transform: uppercase; letter-spacing: .06em; padding: 1px 6px; border-radius: 5px; }
+.pill.s-added { color: var(--add); background: var(--add-bg); }
+.pill.s-changed { color: var(--chg); background: var(--chg-bg); }
+.pill.s-removed { color: var(--del); background: var(--del-bg); }
+.pill.s-context { color: var(--ctx); background: var(--ctx-bg); }
+.card-sum { height: 40px; margin: 0; padding: 0 14px 0 16px; font-size: 12px; line-height: 1.4; color: var(--muted); overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+.rows { list-style: none; margin: 0; padding: 0 0 8px; border-top: 1px solid var(--line); }
+.row { height: 30px; display: flex; align-items: center; gap: 8px; padding: 0 12px 0 10px; cursor: pointer; position: relative; transition: background .12s, opacity .2s; }
+.row:hover { background: var(--raise); }
+.row .g { width: 10px; font: 600 12px var(--mono); text-align: center; flex: none; }
+.row.s-added .g { color: var(--add); } .row.s-changed .g { color: var(--chg); } .row.s-removed .g { color: var(--del); }
+.row .mk { font: 500 10px var(--mono); color: var(--faint); width: 34px; flex: none; }
+.row .mn { font: 500 13px var(--mono); white-space: nowrap; }
+.row .sig { font: 400 11.5px var(--mono); color: var(--faint); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.row.s-removed .mn { text-decoration: line-through; text-decoration-color: var(--del); color: var(--muted); }
+.row.s-context .mn { color: var(--muted); }
+.row.sel { background: var(--accent-bg); }
+.row.sel .mn { color: var(--accent); }
+.row .step { display: none; margin-left: auto; flex: none; width: 18px; height: 18px; border-radius: 50%; background: var(--accent); color: #fff; font: 600 10.5px var(--sans); align-items: center; justify-content: center; }
+.row.has-step .step, .card-head .step.on { display: inline-flex; }
+.card-head .step { display: none; width: 18px; height: 18px; border-radius: 50%; background: var(--accent); color: #fff; font: 600 10.5px var(--sans); align-items: center; justify-content: center; margin-left: auto; }
+.card.selc { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+.edge { fill: none; stroke-width: 1.5; transition: opacity .2s, stroke-width .15s; }
+.edge.st-added { stroke: var(--add); } .edge.st-changed { stroke: var(--chg); } .edge.st-removed { stroke: var(--del); } .edge.st-context { stroke: var(--ctx); }
+.edge.inferred { stroke-dasharray: 6 4; }
+.edge.k-reads, .edge.k-writes { stroke-dasharray: 1.5 4; stroke-linecap: round; stroke-width: 1.8; }
+.edge.k-creates { stroke-width: 2.2; }
+.edge.hov, .edge.hl { stroke-width: 2.6; }
+.flowpath { fill: none; stroke: var(--accent); stroke-width: 3; stroke-linecap: round; stroke-dasharray: 2 7; animation: march 0.9s linear infinite; opacity: .9; }
+@keyframes march { to { stroke-dashoffset: -18; } }
+.m-added { fill: var(--add); } .m-changed { fill: var(--chg); } .m-removed { fill: var(--del); } .m-context { fill: var(--ctx); } .m-accent { fill: var(--accent); }
+
+.focus .card:not(.hl) { opacity: .32; }
+.focus .card.hl .row:not(.hl) { opacity: .4; }
+.focus .edge:not(.hl) { opacity: .1; }
+
+.zoombar { position: absolute; right: 16px; bottom: 16px; display: flex; align-items: center; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; box-shadow: var(--shadow); overflow: hidden; }
+.zoombar button { background: none; border: 0; width: 34px; height: 32px; cursor: pointer; font-size: 16px; color: var(--ink-2); }
+.zoombar button:hover { background: var(--raise); }
+.zoombar .pct { font: 500 11.5px var(--mono); color: var(--muted); width: 48px; text-align: center; }
+.zoombar .fit { width: auto; padding: 0 12px; font-size: 12.5px; border-left: 1px solid var(--line); }
+.hint { position: absolute; left: 16px; bottom: 16px; font-size: 12px; color: var(--faint); pointer-events: none; }
+#sideToggle { display: none; }
+
+/* ---------- drawer ---------- */
+#drawer { position: absolute; top: 0; right: 0; bottom: 0; width: min(460px, 100%); background: var(--panel); border-left: 1px solid var(--line); box-shadow: -12px 0 32px rgb(0 0 0 / .06); overflow-y: auto; transform: translateX(100%); transition: transform .22s cubic-bezier(.2,.8,.2,1); z-index: 4; }
+#drawer.open { transform: none; }
+.dw { padding: 18px 22px 40px; }
+.dw-top { display: flex; align-items: center; gap: 8px; }
+.crumb { font: 500 11.5px var(--mono); color: var(--faint); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.x { margin-left: auto; background: none; border: 0; width: 30px; height: 30px; border-radius: 8px; cursor: pointer; color: var(--muted); font-size: 18px; flex: none; }
+.x:hover { background: var(--raise); color: var(--ink); }
+.dw h2 { font: 600 22px var(--mono); letter-spacing: -0.02em; margin: 6px 0 8px; word-break: break-word; }
+.dw h2 .cn { color: var(--faint); font-weight: 500; }
+.badges { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+.tag { font: 500 11px var(--mono); color: var(--muted); border: 1px solid var(--line); padding: 0 6px; border-radius: 5px; }
+.dw .lead { font-size: 15px; line-height: 1.55; color: var(--ink); margin: 14px 0 0; }
+.dw section { margin-top: 22px; }
+.dw h3 { font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin: 0 0 8px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
+.dw h3 .tag { text-transform: none; letter-spacing: 0; }
+pre.klar, pre.code { margin: 0; background: var(--raise); border: 1px solid var(--line); border-radius: 10px; padding: 12px 0; font: 400 12px/1.7 var(--mono); overflow-x: auto; }
+pre.klar .ln, pre.code .ln { display: block; padding: 0 14px 0 0; white-space: pre; min-height: 1.65em; }
+pre.klar .gut { display: inline-block; width: 26px; text-align: center; color: var(--faint); user-select: none; }
+pre.klar .ln-add { background: color-mix(in srgb, var(--add-bg) 70%, transparent); } pre.klar .ln-add .gut { color: var(--add); }
+pre.klar .ln-del { background: color-mix(in srgb, var(--del-bg) 70%, transparent); } pre.klar .ln-del .gut { color: var(--del); }
+pre.klar .ln-del > :not(.gut) { opacity: .75; }
+pre.klar .ln-chg .gut { color: var(--chg); }
+.t-kw { color: var(--accent); font-weight: 500; }
+.t-str { color: var(--ink-2); font-style: italic; }
+.t-doc { color: var(--muted); font-style: italic; }
+.t-ty { color: var(--chg); }
+.t-num { color: var(--add); }
+.t-op { color: var(--faint); }
+.t-com { color: var(--faint); font-style: italic; }
+.t-at { color: var(--faint); }
+.chips { display: flex; gap: 6px; flex-wrap: wrap; }
+.chip { font: 500 12px var(--mono); padding: 3px 9px; border-radius: 7px; background: var(--raise); border: 1px solid var(--line); }
+.chip.gone { text-decoration: line-through; color: var(--del); border-color: transparent; background: var(--del-bg); }
+.chip.new { color: var(--add); border-color: transparent; background: var(--add-bg); }
+.links { list-style: none; margin: 0; padding: 0; }
+.links button { width: 100%; display: flex; align-items: center; gap: 10px; background: none; border: 0; padding: 7px 8px; margin: 0 -8px; border-radius: 8px; cursor: pointer; text-align: left; }
+.links button:hover { background: var(--raise); }
+.links .ek { font: 500 10.5px var(--mono); color: var(--faint); width: 52px; flex: none; }
+.links .en { font: 500 13px var(--mono); }
+.links .en .cn { color: var(--faint); }
+.links .inf { margin-left: auto; font: 500 10.5px var(--sans); color: var(--muted); border: 1px dashed var(--line-2); padding: 0 6px; border-radius: 5px; white-space: nowrap; }
+.links .dot { width: 7px; height: 7px; border-radius: 50%; flex: none; }
+.dot.s-added { background: var(--add); } .dot.s-changed { background: var(--chg); } .dot.s-removed { background: var(--del); } .dot.s-context { background: var(--ctx); }
+details.raw { margin-top: 26px; border-top: 1px solid var(--line); padding-top: 14px; }
+details.raw summary { cursor: pointer; font-size: 12.5px; color: var(--muted); list-style: none; display: flex; align-items: center; gap: 6px; }
+details.raw summary::-webkit-details-marker { display: none; }
+details.raw summary::before { content: "›"; display: inline-block; transition: transform .15s; font-size: 15px; }
+details.raw[open] summary::before { transform: rotate(90deg); }
+details.raw .why { font-size: 12px; color: var(--faint); margin: 8px 0 10px; }
+.tabs { display: inline-flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; margin-bottom: 8px; }
+.tabs button { background: none; border: 0; padding: 3px 10px; font-size: 12px; cursor: pointer; color: var(--muted); }
+.tabs button.on { background: var(--raise); color: var(--ink); font-weight: 500; }
+pre.code .no { display: inline-block; width: 38px; padding-right: 12px; text-align: right; color: var(--faint); user-select: none; }
+.dw .notes .note { cursor: default; }
+
+@media (max-width: 760px) {
+  #app { grid-template-columns: 1fr; }
+  #side { position: absolute; inset: 0 0 auto 0; max-height: 78dvh; border-right: 0; border-bottom: 1px solid var(--line); box-shadow: var(--shadow); transform: translateY(-102%); transition: transform .22s; padding: 18px 16px; }
+  #app.side-open #side { transform: none; }
+  #sideToggle { display: inline-flex; position: absolute; left: 16px; top: 16px; z-index: 2; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 7px 12px; box-shadow: var(--shadow); font-size: 13px; font-weight: 500; cursor: pointer; }
+  #drawer { top: auto; height: 78dvh; width: 100%; border-left: 0; border-top: 1px solid var(--line); border-radius: 16px 16px 0 0; transform: translateY(102%); }
+  .hint { display: none; }
+  .dw { padding: 16px 16px 32px; }
+}
+</style>
+</head>
+<body>
+<div id="app">
+  <aside id="side"></aside>
+  <main id="stage">
+    <div id="world"><svg id="edges"></svg><div id="nodes"></div></div>
+    <button id="sideToggle" type="button">Overview</button>
+    <div class="hint">Drag to pan · Ctrl/⌘ + scroll to zoom · click a function to inspect it</div>
+    <div class="zoombar">
+      <button type="button" data-z="out" aria-label="Zoom out">−</button>
+      <span class="pct">100%</span>
+      <button type="button" data-z="in" aria-label="Zoom in">+</button>
+      <button type="button" class="fit" data-z="fit">Fit</button>
+    </div>
+    <aside id="drawer" aria-live="polite"></aside>
+  </main>
+</div>
+
+<script id="openarc-data" type="application/json"></script>
+<script src="https://cdn.jsdelivr.net/npm/elkjs@0.9.3/lib/elk.bundled.js"></script>
+<script type="module">
+const $ = (s, el = document) => el.querySelector(s);
+const $$ = (s, el = document) => [...el.querySelectorAll(s)];
+const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+
+// ---------- load ----------
+async function loadGraph() {
+  const inline = $("#openarc-data").textContent.trim();
+  if (inline) return JSON.parse(inline);
+  const src = new URLSearchParams(location.search).get("src") || "graph.json";
+  return (await fetch(src)).json();
+}
+const G = await loadGraph();
+
+const comps = new Map(), members = new Map();
+for (const c of G.components) {
+  comps.set(c.id, c);
+  for (const m of c.members) { m.component = c; members.set(m.id, m); }
+}
+const compOf = (id) => members.get(id)?.component || comps.get(id);
+const edges = G.edges.map((e, i) => ({ resolution: "static", ...e, i }));
+const outE = new Map(), inE = new Map();
+for (const e of edges) {
+  (outE.get(e.from) || outE.set(e.from, []).get(e.from)).push(e);
+  (inE.get(e.to) || inE.set(e.to, []).get(e.to)).push(e);
+}
+const STATUS_LABEL = { added: "new", changed: "changed", removed: "removed", context: "context" };
+const GUTTER = { added: "+", changed: "~", removed: "−", context: "" };
+const MK = { function: "fn", const: "const", state: "state", type: "type" };
+
+// ---------- side panel ----------
+const side = $("#side");
+function renderSide() {
+  const counts = { added: 0, changed: 0, removed: 0 };
+  for (const m of members.values()) if (m.status in counts) counts[m.status]++;
+  side.innerHTML = `
+    <div class="brand">
+      <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M3 16 A8 8 0 0 1 17 16"/><circle cx="3" cy="16" r="1.6" fill="currentColor" stroke="none"/><circle cx="17" cy="16" r="1.6" fill="currentColor" stroke="none"/></svg>
+      OpenArc <span class="ver">graph ${esc(G.openarc)}</span>
+    </div>
+    <div>
+      <h1>${esc(G.change.title)}</h1>
+      <p class="summary">${esc(G.change.summary)}</p>
+      <div class="stats">
+        ${counts.added ? `<span class="stat s-added">+${counts.added} added</span>` : ""}
+        ${counts.changed ? `<span class="stat s-changed">~${counts.changed} changed</span>` : ""}
+        ${counts.removed ? `<span class="stat s-removed">−${counts.removed} removed</span>` : ""}
+      </div>
+    </div>
+    ${G.flows?.length ? `<div class="sec"><h2>Flows</h2>${G.flows.map((f) => `
+      <button class="flow" data-flow="${esc(f.id)}" type="button">
+        <span class="fn">${esc(f.name)}<small>${f.steps.length} steps</small></span>
+        <span class="fd">${esc(f.description || "")}</span>
+      </button>`).join("")}</div>` : ""}
+    ${G.notes?.length ? `<div class="sec"><h2>For the reviewer</h2>${G.notes.map((n, i) => `
+      <button class="note k-${esc(n.kind)}" data-note="${i}" type="button"><span class="nk">${esc(n.kind)}</span>${esc(n.text)}</button>`).join("")}</div>` : ""}
+    <div class="legend">
+      <span><i style="background:var(--add)"></i>Added</span>
+      <span><svg viewBox="0 0 26 8"><path d="M1 4H25" stroke="var(--muted)" stroke-width="1.6"/></svg>Calls</span>
+      <span><i style="background:var(--chg)"></i>Changed</span>
+      <span><svg viewBox="0 0 26 8"><path d="M1 4H25" stroke="var(--muted)" stroke-width="1.6" stroke-dasharray="5 3"/></svg>Inferred</span>
+      <span><i style="background:var(--del)"></i>Removed</span>
+      <span><svg viewBox="0 0 26 8"><path d="M2 4H25" stroke="var(--muted)" stroke-width="1.8" stroke-dasharray="1.5 4" stroke-linecap="round"/></svg>Reads/writes</span>
+      <span><i style="border:1px dashed var(--ctx)"></i>Context</span>
+      <span><svg viewBox="0 0 26 8"><path d="M1 4H25" stroke="var(--muted)" stroke-width="2.6"/></svg>Creates</span>
+    </div>`;
+}
+renderSide();
+
+// ---------- cards & layout ----------
+const W = 270, HEAD = 56, SUM = 40, ROW = 30, PAD = 8;
+const cardH = (c) => HEAD + (c.summary ? SUM : 0) + 1 + c.members.length * ROW + PAD + 2;
+const shortSig = (s = "") => {
+  const m = s.match(/^\((.*?)\)(.*)$/);
+  if (!m) return s;
+  const params = m[1].split(",").map((p) => p.split(/[:=]/)[0].trim()).filter(Boolean).join(", ");
+  return `(${params})${m[2].replace("->", "→")}`;
+};
+
+const edgeKeys = new Set(), elkEdges = [];
+for (const e of edges) {
+  const a = compOf(e.from)?.id, b = compOf(e.to)?.id;
+  if (!a || !b || a === b || edgeKeys.has(a + ">" + b)) continue;
+  edgeKeys.add(a + ">" + b);
+  elkEdges.push({ id: "e" + elkEdges.length, sources: ["c:" + a], targets: ["c:" + b] });
+}
+const elk = new ELK();
+const laid = await elk.layout({
+  id: "root",
+  layoutOptions: {
+    "elk.algorithm": "layered", "elk.direction": "RIGHT",
+    "elk.layered.spacing.nodeNodeBetweenLayers": "84", "elk.spacing.nodeNode": "28",
+    "elk.layered.spacing.edgeNodeBetweenLayers": "24", "elk.padding": "[top=24,left=24,bottom=24,right=24]",
+    "elk.layered.nodePlacement.strategy": "BRANDES_KOEPF", "elk.spacing.componentComponent": "48",
+    "elk.layered.considerModelOrder.strategy": "NODES_AND_EDGES",
+  },
+  children: G.components.map((c) => ({ id: "c:" + c.id, width: W, height: cardH(c) })),
+  edges: elkEdges,
+});
+
+const pos = {};
+const nodesEl = $("#nodes");
+let html = "";
+const shortPath = (f = "") => f.replace(/^src\//, "");
+for (const n of laid.children) {
+  {
+    const c = comps.get(n.id.slice(2));
+    pos[c.id] = { x: n.x, y: n.y, h: n.height };
+    html += `
+      <div class="card s-${c.status}" data-c="${esc(c.id)}" style="left:${pos[c.id].x}px;top:${pos[c.id].y}px;width:${W}px;height:${n.height}px">
+        <div class="card-head" data-id="${esc(c.id)}">
+          <span class="kind">${esc(c.kind)}<span class="path">${esc(shortPath(c.file))}</span><span class="pill s-${c.status}">${STATUS_LABEL[c.status]}</span><span class="step"></span></span>
+          <span class="cname">${esc(c.name)}</span>
+        </div>
+        ${c.summary ? `<p class="card-sum">${esc(c.summary)}</p>` : ""}
+        <ul class="rows">${c.members.map((m) => `
+          <li class="row s-${m.status}" data-id="${esc(m.id)}" title="${esc(m.summary || "")}">
+            <span class="g">${GUTTER[m.status]}</span><span class="mk">${MK[m.kind] || esc(m.kind)}</span>
+            <span class="mn">${esc(m.name)}</span><span class="sig">${esc(shortSig(m.signature))}</span><span class="step"></span>
+          </li>`).join("")}</ul>
+      </div>`;
+  }
+}
+nodesEl.innerHTML = html;
+const worldW = laid.width, worldH = laid.height;
+
+// ---------- edges ----------
+function anchor(id, side) {
+  const c = compOf(id), p = pos[c.id];
+  let y = p.y + HEAD / 2;
+  const i = c.members.findIndex((m) => m.id === id);
+  if (i >= 0) y = p.y + 1 + HEAD + (c.summary ? SUM : 0) + 1 + i * ROW + ROW / 2;
+  return { x: side === "r" ? p.x + W : p.x, y };
+}
+function pathBetween(from, to) {
+  const cs = compOf(from), ct = compOf(to), ps = pos[cs.id], pt = pos[ct.id];
+  if (cs === ct) {
+    const a = anchor(from, "r"), b = anchor(to, "r"), bx = 26 + Math.abs(b.y - a.y) * 0.25;
+    return `M${a.x},${a.y} C${a.x + bx},${a.y} ${b.x + bx},${b.y} ${b.x + 3},${b.y}`;
+  }
+  if (pt.x >= ps.x + W - 1) {
+    const a = anchor(from, "r"), b = anchor(to, "l"), dx = Math.max(36, (b.x - a.x) * 0.5);
+    return `M${a.x},${a.y} C${a.x + dx},${a.y} ${b.x - dx},${b.y} ${b.x - 3},${b.y}`;
+  }
+  if (pt.x + W <= ps.x) {
+    const a = anchor(from, "l"), b = anchor(to, "r"), dx = Math.max(36, (a.x - b.x) * 0.5);
+    return `M${a.x},${a.y} C${a.x - dx},${a.y} ${b.x + dx},${b.y} ${b.x + 3},${b.y}`;
+  }
+  const a = anchor(from, "r"), b = anchor(to, "r"), xm = Math.max(a.x, b.x) + 60;
+  return `M${a.x},${a.y} C${xm},${a.y} ${xm},${b.y} ${b.x + 3},${b.y}`;
+}
+const svg = $("#edges");
+svg.setAttribute("width", worldW); svg.setAttribute("height", worldH);
+svg.innerHTML = `<defs>${["added", "changed", "removed", "context", "accent"].map((s) => `
+  <marker id="ar-${s}" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+    <path d="M1,1 L9,5 L1,9 z" class="m-${s}"/></marker>`).join("")}</defs>
+  <g id="edgeLayer">${edges.map((e) => `<path class="edge st-${e.status} k-${e.kind} ${e.resolution !== "static" ? "inferred" : ""}" data-i="${e.i}" d="${pathBetween(e.from, e.to)}" marker-end="url(#ar-${e.status})"><title>${esc(e.kind)}${e.label ? " — " + esc(e.label) : ""}</title></path>`).join("")}</g>
+  <g id="flowLayer"></g>`;
+const edgeEls = $$(".edge", svg);
+
+// ---------- pan / zoom ----------
+const stage = $("#stage"), world = $("#world");
+const T = { x: 0, y: 0, k: 1 };
+function apply() {
+  world.style.transform = `translate(${T.x}px,${T.y}px) scale(${T.k})`;
+  const s = 22 * T.k;
+  stage.style.backgroundSize = `${s}px ${s}px`;
+  stage.style.backgroundPosition = `${T.x}px ${T.y}px`;
+  $(".pct").textContent = Math.round(T.k * 100) + "%";
+}
+const clampK = (k) => Math.min(2.5, Math.max(0.2, k));
+function zoomAt(cx, cy, f) {
+  const r = stage.getBoundingClientRect(), x = cx - r.left, y = cy - r.top, k = clampK(T.k * f);
+  T.x = x - ((x - T.x) * k) / T.k; T.y = y - ((y - T.y) * k) / T.k; T.k = k; apply();
+}
+function animateTo(tx, ty, tk, ms = 320) {
+  const s = { ...T }, t0 = performance.now();
+  const step = (t) => {
+    const p = Math.min(1, (t - t0) / ms), e = 1 - Math.pow(1 - p, 3);
+    T.x = s.x + (tx - s.x) * e; T.y = s.y + (ty - s.y) * e; T.k = s.k + (tk - s.k) * e; apply();
+    if (p < 1) requestAnimationFrame(step);
+  };
+  requestAnimationFrame(step);
+}
+function visibleRect() {
+  const r = stage.getBoundingClientRect();
+  const drawerW = $("#drawer").classList.contains("open") && innerWidth > 760 ? $("#drawer").offsetWidth : 0;
+  const drawerH = $("#drawer").classList.contains("open") && innerWidth <= 760 ? $("#drawer").offsetHeight : 0;
+  return { w: r.width - drawerW, h: r.height - drawerH };
+}
+function fit(animate = true) {
+  const v = visibleRect(), m = 40;
+  const k = clampK(Math.min((v.w - m * 2) / worldW, (v.h - m * 2) / worldH, 1.1));
+  const x = (v.w - worldW * k) / 2, y = (v.h - worldH * k) / 2;
+  animate ? animateTo(x, y, k) : (Object.assign(T, { x, y, k }), apply());
+}
+function focusBox(box) {
+  const v = visibleRect(), k = Math.max(T.k, 0.85);
+  animateTo(v.w / 2 - (box.x + box.w / 2) * k, v.h / 2 - (box.y + box.h / 2) * k, k);
+}
+function focusIds(ids) {
+  const ps = ids.map((id) => pos[compOf(id)?.id]).filter(Boolean);
+  if (!ps.length) return;
+  const x0 = Math.min(...ps.map((p) => p.x)), y0 = Math.min(...ps.map((p) => p.y));
+  const x1 = Math.max(...ps.map((p) => p.x + W)), y1 = Math.max(...ps.map((p) => p.y + p.h));
+  const v = visibleRect();
+  const k = clampK(Math.min((v.w - 120) / (x1 - x0), (v.h - 120) / (y1 - y0), 1.1));
+  if (k < T.k || x1 - x0 > W) animateTo(v.w / 2 - ((x0 + x1) / 2) * k, v.h / 2 - ((y0 + y1) / 2) * k, k);
+  else focusBox({ x: x0, y: y0, w: x1 - x0, h: y1 - y0 });
+}
+
+stage.addEventListener("wheel", (e) => {
+  if (e.target.closest("#drawer")) return;
+  e.preventDefault();
+  if (e.ctrlKey || e.metaKey) zoomAt(e.clientX, e.clientY, Math.exp(-e.deltaY * 0.01));
+  else { T.x -= e.deltaX; T.y -= e.deltaY; apply(); }
+}, { passive: false });
+
+const ptrs = new Map();
+let drag = null, moved = false, pinch = null;
+stage.addEventListener("pointerdown", (e) => {
+  if (e.target.closest("#drawer, .zoombar, #sideToggle")) return;
+  ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY });
+  if (ptrs.size === 1) { drag = { x: e.clientX, y: e.clientY, tx: T.x, ty: T.y }; moved = false; }
+  if (ptrs.size === 2) {
+    const [a, b] = [...ptrs.values()];
+    pinch = { d: Math.hypot(a.x - b.x, a.y - b.y), k: T.k }; drag = null;
+  }
+});
+addEventListener("pointermove", (e) => {
+  if (!ptrs.has(e.pointerId)) return;
+  ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY });
+  if (pinch && ptrs.size === 2) {
+    const [a, b] = [...ptrs.values()];
+    const f = (pinch.k * Math.hypot(a.x - b.x, a.y - b.y)) / pinch.d / T.k;
+    zoomAt((a.x + b.x) / 2, (a.y + b.y) / 2, f); moved = true; return;
+  }
+  if (!drag) return;
+  const dx = e.clientX - drag.x, dy = e.clientY - drag.y;
+  if (!moved && Math.hypot(dx, dy) < 4) return;
+  moved = true; stage.classList.add("dragging");
+  T.x = drag.tx + dx; T.y = drag.ty + dy; apply();
+});
+const endPtr = (e) => {
+  ptrs.delete(e.pointerId);
+  if (ptrs.size < 2) pinch = null;
+  if (!ptrs.size) { drag = null; stage.classList.remove("dragging"); }
+};
+addEventListener("pointerup", endPtr); addEventListener("pointercancel", endPtr);
+
+$(".zoombar").addEventListener("click", (e) => {
+  const z = e.target.closest("button")?.dataset.z; if (!z) return;
+  const r = stage.getBoundingClientRect(), v = visibleRect();
+  if (z === "fit") fit();
+  else zoomAt(r.left + v.w / 2, r.top + v.h / 2, z === "in" ? 1.25 : 0.8);
+});
+
+// ---------- selection, flows, notes ----------
+const S = { sel: null, flow: null, note: null };
+const rowEls = $$(".row, .card-head");
+const cardEls = $$(".card");
+
+function relatedEdges(id) {
+  const ids = comps.has(id) ? [id, ...comps.get(id).members.map((m) => m.id)] : [id];
+  return ids.flatMap((x) => [...(outE.get(x) || []), ...(inE.get(x) || [])]);
+}
+function highlight() {
+  const nodes = new Set(), hlEdges = new Set(), steps = new Map();
+  const flowLayer = $("#flowLayer");
+  flowLayer.innerHTML = "";
+  if (S.flow) {
+    const f = G.flows.find((x) => x.id === S.flow);
+    f.steps.forEach((s, i) => { nodes.add(s); if (!steps.has(s)) steps.set(s, i + 1); });
+    let d = "";
+    for (let i = 0; i < f.steps.length - 1; i++) d += pathBetween(f.steps[i], f.steps[i + 1]) + " ";
+    flowLayer.innerHTML = `<path class="flowpath" d="${d}" marker-end="url(#ar-accent)"/>`;
+  }
+  if (S.note != null) for (const r of G.notes[S.note].refs) { nodes.add(r); relatedEdges(r).forEach((e) => hlEdges.add(e.i)); }
+  if (S.sel) {
+    nodes.add(S.sel);
+    if (comps.has(S.sel)) comps.get(S.sel).members.forEach((m) => nodes.add(m.id));
+    for (const e of relatedEdges(S.sel)) { hlEdges.add(e.i); nodes.add(e.from); nodes.add(e.to); }
+  }
+  const focus = nodes.size > 0;
+  $("#app").classList.toggle("focus", focus);
+  for (const el of rowEls) {
+    const id = el.dataset.id;
+    const on = nodes.has(id) || (comps.has(id) && nodes.has(id));
+    el.classList.toggle("hl", on || (el.classList.contains("row") && nodes.has(compOf(id).id) && comps.has(S.sel)));
+    el.classList.toggle("sel", id === S.sel && el.classList.contains("row"));
+    const st = el.querySelector(".step");
+    if (st) { st.textContent = steps.get(id) || ""; el.classList.toggle("has-step", steps.has(id)); st.classList.toggle("on", steps.has(id)); }
+  }
+  for (const el of cardEls) {
+    const c = comps.get(el.dataset.c);
+    el.classList.toggle("hl", nodes.has(c.id) || c.members.some((m) => nodes.has(m.id)));
+    el.classList.toggle("selc", S.sel === c.id);
+  }
+  edgeEls.forEach((el) => el.classList.toggle("hl", hlEdges.has(+el.dataset.i)));
+  $$(".flow").forEach((b) => b.classList.toggle("on", b.dataset.flow === S.flow));
+  $$(".note[data-note]", side).forEach((b) => b.classList.toggle("on", +b.dataset.note === S.note));
+}
+
+function select(id, { pan = true } = {}) {
+  S.sel = id;
+  highlight();
+  if (id) { openDrawer(id); if (pan || hiddenByDrawer(id)) focusIds([id]); }
+  else closeDrawer();
+}
+function hiddenByDrawer(id) {
+  const el = $(`[data-c="${CSS.escape(compOf(id).id)}"]`), r = el.getBoundingClientRect(), s = stage.getBoundingClientRect(), v = visibleRect();
+  return r.right > s.left + v.w - 16 || r.bottom > s.top + v.h - 16 || r.left < s.left || r.top < s.top;
+}
+
+nodesEl.addEventListener("click", (e) => {
+  if (moved) return;
+  const el = e.target.closest("[data-id]");
+  if (el) select(el.dataset.id, { pan: false });
+});
+stage.addEventListener("click", (e) => {
+  if (moved || e.target.closest("[data-id], #drawer, .zoombar, #sideToggle")) return;
+  S.flow = null; S.note = null; select(null);
+});
+nodesEl.addEventListener("pointerover", (e) => {
+  const id = e.target.closest("[data-id]")?.dataset.id;
+  const rel = id ? new Set(relatedEdges(id).map((x) => x.i)) : new Set();
+  edgeEls.forEach((el) => el.classList.toggle("hov", rel.has(+el.dataset.i)));
+});
+nodesEl.addEventListener("pointerleave", () => edgeEls.forEach((el) => el.classList.remove("hov")));
+
+side.addEventListener("click", (e) => {
+  const f = e.target.closest("[data-flow]"), n = e.target.closest("[data-note]");
+  if (f) {
+    S.flow = S.flow === f.dataset.flow ? null : f.dataset.flow; S.note = null; S.sel = null; closeDrawer(); highlight();
+    if (S.flow) focusIds(G.flows.find((x) => x.id === S.flow).steps);
+  }
+  if (n) {
+    const i = +n.dataset.note;
+    S.note = S.note === i ? null : i; S.flow = null; S.sel = null; highlight();
+    if (S.note != null) { openDrawer(G.notes[i].refs[0]); focusIds(G.notes[i].refs); } else closeDrawer();
+  }
+  if (innerWidth <= 760 && (f || n)) $("#app").classList.remove("side-open");
+});
+$("#sideToggle").addEventListener("click", () => $("#app").classList.toggle("side-open"));
+
+addEventListener("keydown", (e) => {
+  if (e.target.closest("input, textarea")) return;
+  if (e.key === "Escape") { S.flow = null; S.note = null; select(null); }
+  if (e.key === "f") fit();
+  if (e.key === "=" || e.key === "+") $('[data-z="in"]').click();
+  if (e.key === "-") $('[data-z="out"]').click();
+});
+
+// ---------- Klar highlighting ----------
+const KW = new Set("klar change class module interface record enum external fn const state type needs private let set if else for each in while match case return fail wait emit spawn new not and or is missing effects elides none with".split(" "));
+const TOK = /("[^"]*")|(#.*$)|(@\s*[\w./-]*:?[\d-]*)|(\b[A-Za-z_][\w]*\b)|(\b\d+(?:\.\d+)?\b)|(→|->|←|<-|≥|≤|×|…|=)/g;
+function tok(s) {
+  let out = "", last = 0, m;
+  TOK.lastIndex = 0;
+  while ((m = TOK.exec(s))) {
+    out += esc(s.slice(last, m.index));
+    const [t, str, com, at, word, num, op] = m;
+    if (str) out += `<span class="${s.trimStart().startsWith('"') && m.index === s.length - s.trimStart().length ? "t-doc" : "t-str"}">${esc(t)}</span>`;
+    else if (com) out += `<span class="t-com">${esc(t)}</span>`;
+    else if (at) out += `<span class="t-at">${esc(t)}</span>`;
+    else if (word) out += KW.has(word) ? `<span class="t-kw">${esc(t)}</span>` : /^[A-Z][a-z]/.test(word) ? `<span class="t-ty">${esc(t)}</span>` : esc(t);
+    else if (num) out += `<span class="t-num">${esc(t)}</span>`;
+    else out += `<span class="t-op">${esc(t)}</span>`;
+    last = m.index + t.length;
+  }
+  return out + esc(s.slice(last));
+}
+function klarHTML(src) {
+  return src.replace(/\n+$/, "").split("\n").map((line) => {
+    const g = line[0] || " ", rest = line.slice(2);
+    const cls = g === "+" ? "ln-add" : g === "-" ? "ln-del" : g === "~" ? "ln-chg" : "";
+    return `<span class="ln ${cls}"><span class="gut">${g === " " ? "" : g === "-" ? "−" : esc(g)}</span>${tok(rest)}</span>`;
+  }).join("");
+}
+// The drawer shows the summary as prose above the block, so drop the matching doc line from it.
+function withoutDoc(src, summary) {
+  if (!summary) return src;
+  return src.split("\n").filter((l) => l.slice(2).trim() !== `"${summary}"`).join("\n");
+}
+function codeHTML(code, start) {
+  return code.replace(/\n+$/, "").split("\n").map((l, i) => `<span class="ln"><span class="no">${start + i}</span>${esc(l)}</span>`).join("");
+}
+
+// ---------- drawer ----------
+const drawer = $("#drawer");
+function closeDrawer() { drawer.classList.remove("open"); }
+function linkList(list, dir) {
+  if (!list.length) return "";
+  return `<ul class="links">${list.map((e) => {
+    const id = dir === "out" ? e.to : e.from, c = compOf(id), m = members.get(id);
+    const name = m ? `<span class="cn">${esc(c.name)}.</span>${esc(m.name)}` : esc(c.name);
+    const st = (m || c).status;
+    const inf = e.resolution === "inferred" ? `<span class="inf" title="Asserted by the agent, not resolved from the code${e.label ? ": " + esc(e.label) : ""}">inferred</span>`
+      : e.resolution === "dispatch" ? `<span class="inf" title="Called through an interface or function value">dispatch</span>` : "";
+    return `<li><button type="button" data-goto="${esc(id)}"><span class="ek">${esc(e.kind)}</span><span class="dot s-${e.status === "context" ? st : e.status}"></span><span class="en">${name}</span>${inf}</button></li>`;
+  }).join("")}</ul>`;
+}
+function effectsHTML(m) {
+  if (!m.effects && !m.baseEffects) return "";
+  const now = m.effects || [], was = m.baseEffects || now;
+  const chips = [
+    ...now.map((x) => `<span class="chip ${was.includes(x) ? "" : "new"}">${esc(x)}</span>`),
+    ...was.filter((x) => !now.includes(x)).map((x) => `<span class="chip gone">${esc(x)}</span>`),
+  ];
+  return `<section><h3>Effects</h3><div class="chips">${chips.join("") || `<span class="chip">none</span>`}</div></section>`;
+}
+function notesFor(id) {
+  const ns = (G.notes || []).filter((n) => n.refs.includes(id) || n.refs.includes(compOf(id)?.id));
+  if (!ns.length) return "";
+  return `<section class="notes"><h3>For the reviewer</h3>${ns.map((n) => `<div class="note k-${esc(n.kind)}"><span class="nk">${esc(n.kind)}</span>${esc(n.text)}</div>`).join("")}</section>`;
+}
+function rawHTML(x, file) {
+  const head = x.source?.code != null, base = x.base?.code != null;
+  if (!head && !base) return "";
+  const first = head ? "head" : "base";
+  const tab = (k, label) => `<button type="button" data-tab="${k}" class="${k === first ? "on" : ""}">${label}</button>`;
+  return `<details class="raw"><summary>Source code</summary>
+    <p class="why">The code this was written from, for checking it against the Klar.</p>
+    ${head && base ? `<div class="tabs">${tab("head", "After")}${tab("base", "Before")}</div>` : ""}
+    ${head ? `<div data-pane="head" ${first !== "head" ? "hidden" : ""}><div class="crumb" style="margin-bottom:6px">${esc(x.source.file || file)}:${x.source.lines[0]}–${x.source.lines[1]}</div><pre class="code">${codeHTML(x.source.code, x.source.lines[0])}</pre></div>` : ""}
+    ${base ? `<div data-pane="base" ${first !== "base" ? "hidden" : ""}><div class="crumb" style="margin-bottom:6px">${esc(x.base.file || file)}:${x.base.lines[0]}–${x.base.lines[1]} (before)</div><pre class="code">${codeHTML(x.base.code, x.base.lines[0])}</pre></div>` : ""}
+  </details>`;
+}
+function openDrawer(id) {
+  const m = members.get(id), c = compOf(id);
+  if (!c) return;
+  let body;
+  if (m) {
+    body = `
+      <div class="dw-top"><span class="crumb">${esc(c.file || "")}</span><button class="x" type="button" aria-label="Close">×</button></div>
+      <h2><span class="cn">${esc(c.name)}.</span>${esc(m.name)}</h2>
+      <div class="badges"><span class="pill s-${m.status}">${STATUS_LABEL[m.status]}</span><span class="tag">${esc(m.kind)}</span>${m.visibility === "private" ? `<span class="tag">private</span>` : ""}</div>
+      ${m.summary ? `<p class="lead">${esc(m.summary)}</p>` : ""}
+      ${m.klar ? `<section><h3>Klar</h3><pre class="klar">${klarHTML(withoutDoc(m.klar, m.summary))}</pre></section>` : ""}
+      ${effectsHTML(m)}
+      ${(outE.get(id) || []).length ? `<section><h3>Uses</h3>${linkList(outE.get(id), "out")}</section>` : ""}
+      ${(inE.get(id) || []).length ? `<section><h3>Used by</h3>${linkList(inE.get(id), "in")}</section>` : ""}
+      ${notesFor(id)}
+      ${rawHTML(m, c.file)}`;
+  } else {
+    const ins = c.members.flatMap((x) => inE.get(x.id) || []).concat(inE.get(c.id) || []).filter((e) => compOf(e.from) !== c);
+    body = `
+      <div class="dw-top"><span class="crumb">${esc(c.file || "")}</span><button class="x" type="button" aria-label="Close">×</button></div>
+      <h2>${esc(c.name)}</h2>
+      <div class="badges"><span class="pill s-${c.status}">${STATUS_LABEL[c.status]}</span><span class="tag">${esc(c.kind)}</span></div>
+      ${c.summary ? `<p class="lead">${esc(c.summary)}</p>` : ""}
+      ${c.klar ? `<section><h3>Klar</h3><pre class="klar">${klarHTML(c.klar)}</pre></section>` : ""}
+      <section><h3>Members</h3><ul class="links">${c.members.map((x) => `<li><button type="button" data-goto="${esc(x.id)}"><span class="ek">${MK[x.kind] || esc(x.kind)}</span><span class="dot s-${x.status}"></span><span class="en">${esc(x.name)}</span></button></li>`).join("")}</ul></section>
+      ${ins.length ? `<section><h3>Used by</h3>${linkList(ins, "in")}</section>` : ""}
+      ${notesFor(c.id)}`;
+  }
+  drawer.innerHTML = `<div class="dw">${body}</div>`;
+  drawer.classList.add("open");
+  drawer.scrollTop = 0;
+}
+drawer.addEventListener("click", (e) => {
+  if (e.target.closest(".x")) { S.note = null; select(null); return; }
+  const g = e.target.closest("[data-goto]");
+  if (g) { S.note = null; select(g.dataset.goto); return; }
+  const t = e.target.closest("[data-tab]");
+  if (t) {
+    $$("[data-tab]", drawer).forEach((b) => b.classList.toggle("on", b === t));
+    $$("[data-pane]", drawer).forEach((p) => (p.hidden = p.dataset.pane !== t.dataset.tab));
+  }
+});
+
+document.title = `${G.change.title} · OpenArc`;
+fit(false);
+addEventListener("resize", () => fit(false));
+</script>
+</body>
+</html>

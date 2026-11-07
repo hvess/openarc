@@ -1,0 +1,115 @@
+  klar 0.1
+  change "Rate-limit authenticated requests per client"
+
+  # Context (unchanged, shown only where the change touches it)
+
+  class Router @ src/router.ts
+    fn use(mw: Middleware) @ :18-20 …
+    fn handle(req: Request) -> Response @ :30-35 …
+
+  module auth @ src/auth.ts
+    fn requireAuth(req: Request, next: Handler) -> Response @ :4-11 …
+
+  module db @ src/db.ts
+    fn orders.insert(userId: Text, order: Any) -> Order @ :6-8 …
+
+  # Changes
+
+~ module server @ src/server.ts
+~   fn buildServer(clock: Clock = systemClock) -> Router @ :8-16
+      "Wire the router: authentication, then rate limiting, then the order routes."
+      let router = new Router
++     let limiter = new RateLimiter(clock)
+      router.use(auth.requireAuth)
++     router.use(limits.rateLimit(limiter))
+      router.get("/orders", orders.listOrders)
+      router.post("/orders", orders.createOrder)
+      return router
+      effects: none
+
++ module limits @ src/limits/middleware.ts
+    fn rateLimit(limiter: RateLimiter) -> Middleware @ :4-14
+      "Build middleware that turns a client away with 429 once their allowance runs out."
+      return fn (req, next):
+        if req.user is missing
+          return next(req)                      # unauthenticated requests are not limited here
+        let decision = limiter.check(req.user.id, req.user.plan)
+        if not decision.allowed
+          return 429, header retry-after = decision.retryAfter
+        return next(req)
+      effects: none
+
++ class RateLimiter @ src/limits/rate-limiter.ts
+    "Gives each client a token bucket sized by their plan."
+    needs clock: Clock
+    state buckets: Map<ClientId, TokenBucket> @ :9   # one per client ever seen; never evicted
+
+    fn check(clientId: Text, plan: Plan) -> Decision @ :13-19
+      "Spend one token for this client, or say how many seconds until one is available."
+      let now = clock.now()
+      let bucket = bucketFor(clientId, plan, now)
+      bucket.refill(now)
+      if bucket.tryTake()
+        return allowed
+      return denied, retryAfter = ceil(bucket.secondsUntilNext())
+      effects: time, mutates buckets
+
+    private fn bucketFor(clientId: Text, plan: Plan, now: Time) -> TokenBucket @ :21-29
+      "Find the client's bucket, creating a full one from their plan's limits the first time."
+      if buckets has no entry for clientId
+        let { burst, perSecond } = config.LIMITS[plan]
+        set buckets[clientId] = new TokenBucket(burst, perSecond, now)
+      return buckets[clientId]
+      effects: mutates buckets
+
++ class TokenBucket @ src/limits/token-bucket.ts
+    "An allowance that holds up to capacity tokens and regains refillPerSecond every second."
+    needs capacity: Int, refillPerSecond: Num, now: Time
+    state tokens: Num, updatedAt: Time
+
+    fn refill(now: Time) @ :10-14
+      "Add the tokens earned since the last refill, never exceeding capacity."
+      set tokens = min(capacity, tokens + seconds since updatedAt × refillPerSecond)
+      set updatedAt = now
+      effects: mutates self
+
+    fn tryTake() -> Bool @ :16-20
+      "Take one token if there is a whole one left."
+      if tokens < 1
+        return false
+      set tokens = tokens - 1
+      return true
+      effects: mutates self
+
+    fn secondsUntilNext() -> Num @ :22-24
+      "How long until a whole token is available; zero if one already is."
+      if tokens ≥ 1
+        return 0
+      return (1 - tokens) / refillPerSecond
+      effects: none
+
++ interface Clock @ src/clock.ts
+    "Where the current time comes from; injected so rate limits can be tested."
+    fn now() -> Time @ :2
+    const systemClock: Clock = the wall clock @ :5
+
+~ module config @ src/config.ts
++   const LIMITS: Map<Plan, { burst: Int, perSecond: Num }> @ :4-7
+      "How many requests each plan may burst, and how fast that allowance refills."
+      free: burst 20, then 1 per second
+      pro:  burst 100, then 10 per second
+-   const MAX_ORDERS_PER_MINUTE = 5 @ :2
+
+~ module orders @ src/orders.ts
+-   state recentOrders: Map<UserId, List<Time>> @ :5
+    fn listOrders(req: Request) -> Response @ :4-7 …
+~   fn createOrder(req: Request) -> Response @ :9-12
+      "Store a new order for the signed-in user."
+-     drop this user's order times older than one minute
+-     if they placed MAX_ORDERS_PER_MINUTE or more
+-       return 429
+-     record now in recentOrders[user]
+      let order = db.orders.insert(req.user.id, req.body)
+      return 201 with order
+-     effects: time, mutates recentOrders, io db
++     effects: io db

@@ -1,0 +1,124 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/hvess/openarc/spec/graph.schema.json",
+  "title": "OpenArc Graph 0.1",
+  "type": "object",
+  "required": ["openarc", "change", "components", "edges"],
+  "properties": {
+    "openarc": { "const": "0.1" },
+    "change": {
+      "type": "object",
+      "required": ["title", "summary"],
+      "properties": {
+        "title": { "type": "string", "minLength": 1 },
+        "summary": { "type": "string", "minLength": 1 },
+        "base": { "type": "string" },
+        "head": { "type": "string" }
+      }
+    },
+    "groups": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id"],
+        "properties": { "id": { "type": "string" }, "label": { "type": "string" } }
+      }
+    },
+    "components": { "type": "array", "items": { "$ref": "#/$defs/component" } },
+    "edges": { "type": "array", "items": { "$ref": "#/$defs/edge" } },
+    "flows": { "type": "array", "items": { "$ref": "#/$defs/flow" } },
+    "notes": { "type": "array", "items": { "$ref": "#/$defs/note" } }
+  },
+  "$defs": {
+    "status": { "enum": ["added", "changed", "removed", "context"] },
+    "anchor": {
+      "type": "object",
+      "required": ["lines"],
+      "properties": {
+        "file": { "type": "string" },
+        "lines": {
+          "type": "array",
+          "prefixItems": [{ "type": "integer", "minimum": 1 }, { "type": "integer", "minimum": 1 }],
+          "minItems": 2,
+          "maxItems": 2
+        },
+        "code": { "type": "string" }
+      }
+    },
+    "component": {
+      "type": "object",
+      "required": ["id", "name", "kind", "status", "members"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "name": { "type": "string", "minLength": 1 },
+        "kind": { "enum": ["class", "interface", "module", "record", "enum", "external"] },
+        "status": { "$ref": "#/$defs/status" },
+        "file": { "type": "string" },
+        "group": { "type": "string" },
+        "summary": { "type": "string" },
+        "klar": { "type": "string" },
+        "members": { "type": "array", "items": { "$ref": "#/$defs/member" } }
+      }
+    },
+    "member": {
+      "type": "object",
+      "required": ["id", "name", "kind", "status"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "name": { "type": "string", "minLength": 1 },
+        "kind": { "enum": ["function", "const", "state", "type"] },
+        "status": { "$ref": "#/$defs/status" },
+        "signature": { "type": "string" },
+        "visibility": { "enum": ["public", "private"] },
+        "summary": { "type": "string" },
+        "klar": { "type": "string" },
+        "effects": { "type": "array", "items": { "type": "string" } },
+        "baseEffects": { "type": "array", "items": { "type": "string" } },
+        "source": { "$ref": "#/$defs/anchor" },
+        "base": { "$ref": "#/$defs/anchor" }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "kind": { "const": "function" }, "status": { "enum": ["added", "changed"] } } },
+          "then": { "required": ["summary", "klar"] }
+        },
+        {
+          "if": { "properties": { "status": { "const": "removed" } } },
+          "then": { "required": ["base"] },
+          "else": { "required": ["source"] }
+        }
+      ]
+    },
+    "edge": {
+      "type": "object",
+      "required": ["from", "to", "kind", "status"],
+      "properties": {
+        "from": { "type": "string" },
+        "to": { "type": "string" },
+        "kind": { "enum": ["calls", "creates", "reads", "writes", "implements", "extends", "uses"] },
+        "status": { "$ref": "#/$defs/status" },
+        "resolution": { "enum": ["static", "dispatch", "inferred"], "default": "static" },
+        "label": { "type": "string" }
+      }
+    },
+    "flow": {
+      "type": "object",
+      "required": ["id", "name", "steps"],
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "description": { "type": "string" },
+        "steps": { "type": "array", "items": { "type": "string" }, "minItems": 2 }
+      }
+    },
+    "note": {
+      "type": "object",
+      "required": ["kind", "text", "refs"],
+      "properties": {
+        "kind": { "enum": ["risk", "behaviour", "note"] },
+        "text": { "type": "string", "minLength": 1 },
+        "refs": { "type": "array", "items": { "type": "string" }, "minItems": 1 }
+      }
+    }
+  }
+}
