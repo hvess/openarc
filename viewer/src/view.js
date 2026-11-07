@@ -8,36 +8,41 @@ import { L, narrow } from "./util.js";
 export function createView({ stage, world, pct, drawer, zoombar, painter, size }) {
   const T = { x: 0, y: 0, k: 1 };
   let box = stage.getBoundingClientRect();
-  let queued = false, lastK = null, settleTimer = 0, settled = true, far = false;
+  let queued = false, settledK = null, settleTimer = 0, moving = false, far = false;
   // While the view is where fit() put it, a resize fits again; after the reader moves it, a
   // resize keeps the middle of the view in the middle.
   let fitted = true;
 
   const clampK = (k) => Math.min(L.zoomMax, Math.max(L.zoomMin, k));
-  const frame = () => painter.update({ t: T, w: box.width, h: box.height, far, settled });
+  const frame = () => painter.update({ t: T, w: box.width, h: box.height, far, moving });
 
   function apply() {
     if (!queued) { queued = true; requestAnimationFrame(render); }
   }
+  // A frame only moves layers the GPU already has. Anything that needs redrawing (the zoom
+  // label, text at a new scale, sharp edges) waits until the view has been still for
+  // diagram.settle-delay, so nothing is rastered while it moves.
   function render() {
     queued = false;
     world.style.transform = `translate(${T.x}px,${T.y}px) scale(${T.k})`;
+    moving = true;
     frame();
-    if (T.k === lastK) return;
-    lastK = T.k;
-    pct.textContent = Math.round(T.k * 100) + "%";
-    // The GPU layer keeps the scale it was drawn at, so text blurs while zooming. Once zooming
-    // stops, switch detail level and redraw the layer sharp, together, in one pass.
     clearTimeout(settleTimer);
-    settled = false;
-    settleTimer = setTimeout(() => {
-      settled = true;
+    settleTimer = setTimeout(settle, L.settle);
+  }
+  function settle() {
+    moving = false;
+    if (T.k !== settledK) {
+      settledK = T.k;
+      pct.textContent = Math.round(T.k * 100) + "%";
+      // The GPU layer keeps the scale it was drawn at, so text blurs while zooming. Switch
+      // detail level and redraw the layer sharp, together, in one pass.
       far = T.k < L.detailZoom;
       world.classList.toggle("far", far);
-      frame();
       world.style.willChange = "auto";
       requestAnimationFrame(() => requestAnimationFrame(() => (world.style.willChange = "")));
-    }, L.settle);
+    }
+    frame();
   }
 
   // x, y are relative to the stage.

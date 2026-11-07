@@ -181,6 +181,16 @@
       "$value": 0.25,
       "$description": "How far the painted edge bitmap reaches beyond the view, as a share of the view. Bigger means fewer repaints while panning; smaller means each repaint is quicker"
     },
+    "edge-margin-moving": {
+      "$type": "number",
+      "$value": 0.5,
+      "$description": "The edge bitmap's margin while the view moves. Wider means zooming out repaints less often"
+    },
+    "edge-density-moving": {
+      "$type": "number",
+      "$value": 1,
+      "$description": "Highest pixel density of the edge bitmap while the view moves; it is painted again at full density once the view is still"
+    },
     "settle-delay": {
       "$type": "duration",
       "$value": "150ms",

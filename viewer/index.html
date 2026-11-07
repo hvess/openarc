@@ -67,7 +67,10 @@ p, h1, h2, h3 { margin: 0; }
 .tag { display: inline-flex; align-items: center; height: var(--type-code-meta-line); padding: 0 var(--space-1); border-radius: var(--radius-xs); color: var(--color-text-tertiary); outline: var(--border-width) solid var(--color-border-default); outline-offset: calc(-1 * var(--border-width)); }
 
 /* ---------- canvas ---------- */
-#stage { position: relative; overflow: clip; cursor: grab; touch-action: none; user-select: none; -webkit-user-select: none; }
+/* The stage must not clip: on macOS, Chrome can hand a moving layer to Core Animation only when it
+   is not clipped inside the window, and redraws it every frame otherwise, which halved the frame
+   rate while panning. The sidebar covers the left edge and the window clips the rest. */
+#stage { position: relative; cursor: grab; touch-action: none; user-select: none; -webkit-user-select: none; }
 #loading { position: absolute; inset: 0; display: grid; place-items: center; padding: var(--space-6); text-align: center; color: var(--color-text-tertiary); pointer-events: none; }
 #loading.failed { color: var(--color-status-removed-text); }
 #stage.dragging { cursor: grabbing; }

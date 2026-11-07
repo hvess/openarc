@@ -24,7 +24,8 @@ export const L = {
   slow: num("motion-duration-slow"), settle: num("diagram-settle-delay"), paintDelay: num("diagram-paint-delay"), fontTimeout: num("diagram-font-timeout"),
   zoomMin: num("diagram-zoom-min"), zoomMax: num("diagram-zoom-max"), zoomStep: num("diagram-zoom-step"), zoomWheel: num("diagram-zoom-wheel"),
   zoomFocus: num("diagram-zoom-focus"), detailZoom: num("diagram-detail-zoom"), dragThreshold: num("diagram-drag-threshold"),
-  edgeMargin: num("diagram-edge-margin"), largeGraph: num("diagram-large-graph"),
+  edgeMargin: num("diagram-edge-margin"), edgeMarginMoving: num("diagram-edge-margin-moving"), edgeDensityMoving: num("diagram-edge-density-moving"),
+  largeGraph: num("diagram-large-graph"),
 };
 
 // Matches when the sidebar and inspector are sheets over the canvas.

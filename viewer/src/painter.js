@@ -101,9 +101,15 @@ export function createEdgePainter(canvas, lines) {
     worker = null;
   }
 
+  // While the view moves, paint cheaply: at diagram.edge-density-moving and with the wider
+  // diagram.edge-margin-moving, so zooming out uncovers the bitmap less often. Every new bitmap is
+  // a new GPU texture, so a full-density one per repaint is what made zooming drop frames.
+  // Once the view is still, it is painted again at full density.
+  const fullDpr = () => devicePixelRatio || 1;
   function job() {
-    const { t, w, h, far } = view;
-    return { t: { ...t }, w, h, far, dpr: devicePixelRatio || 1, mx: Math.round(w * L.edgeMargin), my: Math.round(h * L.edgeMargin) };
+    const { t, w, h, far, moving } = view;
+    const dpr = moving ? Math.min(fullDpr(), L.edgeDensityMoving) : fullDpr(), m = moving ? L.edgeMarginMoving : L.edgeMargin;
+    return { t: { ...t }, w, h, far, dpr, mx: Math.round(w * m), my: Math.round(h * m) };
   }
   // True while a bitmap painted for job j covers the whole view v at v's detail level.
   function covers(j, v) {
@@ -112,7 +118,7 @@ export function createEdgePainter(canvas, lines) {
     const vx0 = -v.t.x / v.t.k, vy0 = -v.t.y / v.t.k, vx1 = vx0 + v.w / v.t.k, vy1 = vy0 + v.h / v.t.k;
     return vx0 >= px0 && vy0 >= py0 && vx1 <= px1 && vy1 <= py1;
   }
-  const stale = () => !shown || !covers(shown, view) || (view.settled && shown.t.k !== view.t.k);
+  const stale = () => !shown || !covers(shown, view) || (!view.moving && (shown.t.k !== view.t.k || shown.dpr !== fullDpr()));
 
   function request() {
     if (worker) {
@@ -145,7 +151,7 @@ export function createEdgePainter(canvas, lines) {
   }
 
   return {
-    // v: { t: {x, y, k}, w, h, far, settled }. Call whenever the view changes.
+    // v: { t: {x, y, k}, w, h, far, moving }. Call whenever the view changes.
     update(v) { view = v; place(); if (stale()) request(); },
     // The theme changed: paint again in its colours.
     restyle() { worker?.postMessage({ ink: readInk() }); if (view) request(); },

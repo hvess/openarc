@@ -52,9 +52,10 @@ How the canvas moves is set by tokens too, in the `diagram` group of `components
 | `zoom-wheel` | 0.01 | Zoom per pixel of wheel or pinch movement |
 | `zoom-focus` | 0.85 | Least zoom when the view moves to one card |
 | `drag-threshold` | 4px | Movement before a press becomes a drag |
-| `settle-delay` | 150ms | Pause after zooming before text and edges are redrawn sharp |
+| `settle-delay` | 150ms | Pause after any movement before text, edges and the zoom label are redrawn |
 | `paint-delay` | 120ms | Pause before edges repaint on the main thread, when there is no worker |
 | `edge-margin` | 0.25 | How far the edge bitmap reaches beyond the view |
+| `edge-margin-moving`, `edge-density-moving` | 0.5, 1 | The edge bitmap's margin and highest pixel density while the view moves; it is repainted sharp once the view is still |
 | `font-timeout` | 1500ms | Wait for web fonts before measuring cards with the fallback |
 | `large-graph` | 40 | Above this many components, the layout trades stable order for speed |
 

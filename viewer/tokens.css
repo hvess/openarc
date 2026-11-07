@@ -148,6 +148,8 @@
   --diagram-zoom-focus: 0.85;
   --diagram-drag-threshold: 4px;
   --diagram-edge-margin: 0.25;
+  --diagram-edge-margin-moving: 0.5;
+  --diagram-edge-density-moving: 1;
   --diagram-settle-delay: 150ms;
   --diagram-paint-delay: 120ms;
   --diagram-font-timeout: 1500ms;
