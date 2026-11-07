@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/hvess/openarc/spec/config.schema.json",
+  "title": "OpenArc configuration",
+  "description": "Settings for OpenArc, read from openarc.config.json. OpenArc looks for the file in the directory it builds and then in each parent directory, and uses the first one it finds. Every setting is optional.",
+  "type": "object",
+  "properties": {
+    "$schema": { "type": "string" },
+    "theme": {
+      "description": "Colour theme for the viewer. \"system\" follows the reader's operating system setting; any other value is the name of a theme in design/themes/, such as \"light\" or \"dark\".",
+      "type": "string",
+      "default": "system",
+      "examples": ["system", "light", "dark"]
+    }
+  },
+  "additionalProperties": false
+}

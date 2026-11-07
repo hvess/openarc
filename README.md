@@ -34,6 +34,23 @@ Then serve the folder and open `examples/rate-limit/index.html`. The viewer load
 python3 -m http.server 4719
 ```
 
+## Configuration
+
+OpenArc reads `openarc.config.json` from the directory it builds, or the nearest parent directory that has one. Every setting is optional, and the [schema](spec/config.schema.json) gives editors completion and checking.
+
+```json
+{
+  "$schema": "./spec/config.schema.json",
+  "theme": "system"
+}
+```
+
+| Setting | Default | |
+|---|---|---|
+| `theme` | `"system"` | `"system"` follows the reader's light or dark setting. `"light"`, `"dark"` or the name of any theme in [`design/themes/`](design/themes) fixes it |
+
+Unknown settings and values stop the build, so a typo never goes unnoticed.
+
 ## How it fits together
 
 ```

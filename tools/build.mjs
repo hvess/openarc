@@ -14,6 +14,7 @@ import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { buildTokens } from "./tokens.mjs";
 import { lintDesign } from "./lint-design.mjs";
+import { loadConfig } from "./config.mjs";
 
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
 const dir = process.argv[2];
@@ -63,7 +64,7 @@ delete graph.change.klar;
 writeFileSync(join(dir, "graph.json"), JSON.stringify(graph, null, 2) + "\n");
 
 // Design tokens: regenerate the CSS, check the viewer only uses tokens, then inline both.
-const { css: tokensCSS } = buildTokens();
+const { css: tokensCSS, themes } = buildTokens();
 writeFileSync(join(root, "viewer/tokens.css"), tokensCSS);
 const designProblems = lintDesign();
 if (designProblems.length) {
@@ -71,16 +72,28 @@ if (designProblems.length) {
   process.exit(1);
 }
 
+// Configuration: openarc.config.json in the example directory or any parent.
+let config, configFile;
+try {
+  ({ config, file: configFile } = loadConfig(dir, { themes }));
+} catch (err) {
+  console.error("  ✗ " + err.message);
+  process.exit(1);
+}
+
 const template = readFileSync(join(root, "viewer/index.html"), "utf8");
 const embedded = JSON.stringify(graph).replace(/</g, "\\u003c");
+// "system" leaves data-theme off so the page follows the reader's setting.
+const htmlTag = config.theme === "system" ? '<html lang="en">' : `<html lang="en" data-theme="${config.theme}">`;
 const page = template
+  .replace('<html lang="en">', () => htmlTag)
   .replace('<link rel="stylesheet" href="tokens.css">', () => `<style>\n${tokensCSS}</style>`)
   .replace(
     '<script id="openarc-data" type="application/json"></script>',
     () => `<script id="openarc-data" type="application/json">${embedded}</script>`,
   );
 writeFileSync(join(dir, "index.html"), page);
-console.log(`✓ ${join(dir, "graph.json")}\n✓ ${join(dir, "index.html")}`);
+console.log(`✓ ${join(dir, "graph.json")}\n✓ ${join(dir, "index.html")} (theme: ${config.theme}${configFile ? ", from " + configFile.replace(root + "/", "") : ", default"})`);
 
 // ---------------------------------------------------------------------------
 

@@ -22,7 +22,6 @@ p, h1, h2, h3 { margin: 0; }
 #side { display: grid; grid-template-rows: auto minmax(0, 1fr) auto; min-height: 0; background: var(--color-surface-panel); border-right: var(--border-width) solid var(--color-border-default); z-index: var(--layer-panel); }
 .side-head { display: flex; align-items: center; gap: var(--space-2); height: var(--space-12); padding: 0 var(--space-5); border-bottom: var(--border-width) solid var(--color-border-subtle); }
 .side-head svg { width: var(--control-icon); height: var(--control-icon); color: var(--color-accent-solid); flex: none; }
-.side-head .seg { margin-left: auto; }
 .side-body { overflow-y: auto; padding: var(--space-5); display: flex; flex-direction: column; gap: var(--space-8); }
 .side-body h1 { margin-bottom: var(--space-2); }
 .side-body .summary { color: var(--color-text-secondary); }
@@ -231,19 +230,6 @@ const $ = (s, el = document) => el.querySelector(s);
 const $$ = (s, el = document) => [...el.querySelectorAll(s)];
 const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
 
-// ---------- theme ----------
-// No data-theme follows the system; a stored choice overrides it.
-const THEMES = ["system", "light", "dark"];
-function setTheme(name) {
-  if (name === "system") delete document.documentElement.dataset.theme;
-  else document.documentElement.dataset.theme = name;
-  try { localStorage.setItem("openarc-theme", name); } catch {}
-  $$(".seg [data-theme-set]").forEach((b) => b.classList.toggle("on", b.dataset.themeSet === name));
-}
-let savedTheme = "system";
-try { savedTheme = localStorage.getItem("openarc-theme") || "system"; } catch {}
-if (savedTheme !== "system") document.documentElement.dataset.theme = savedTheme;
-
 // ---------- tokens the layout needs ----------
 const cssVars = getComputedStyle(document.documentElement);
 const token = (name) => cssVars.getPropertyValue("--" + name).trim();
@@ -297,7 +283,6 @@ function renderSide() {
     <header class="side-head type-body-strong">
       <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"><path d="M2.5 12.5a5.5 5.5 0 0 1 11 0"/><circle cx="2.5" cy="12.5" r="1.25" fill="currentColor" stroke="none"/><circle cx="13.5" cy="12.5" r="1.25" fill="currentColor" stroke="none"/></svg>
       OpenArc
-      <div class="seg" role="group" aria-label="Theme">${THEMES.map((t) => `<button type="button" class="type-label" data-theme-set="${t}">${t[0].toUpperCase() + t.slice(1)}</button>`).join("")}</div>
     </header>
     <div class="side-body">
       <div>
@@ -335,7 +320,6 @@ function renderSide() {
     </footer>`;
 }
 renderSide();
-setTheme(savedTheme);
 
 // ---------- cards: measure, lay out, render ----------
 const shortSig = (s = "") => {
@@ -630,8 +614,7 @@ nodesEl.addEventListener("pointerover", (e) => {
 nodesEl.addEventListener("pointerleave", () => edgeEls.forEach((el) => el.classList.remove("hov")));
 
 side.addEventListener("click", (e) => {
-  const f = e.target.closest("[data-flow]"), n = e.target.closest("[data-note]"), t = e.target.closest("[data-theme-set]");
-  if (t) setTheme(t.dataset.themeSet);
+  const f = e.target.closest("[data-flow]"), n = e.target.closest("[data-note]");
   if (f) {
     S.flow = S.flow === f.dataset.flow ? null : f.dataset.flow; S.note = null; S.sel = null; closeDrawer(); highlight();
     if (S.flow) focusIds(G.flows.find((x) => x.id === S.flow).steps);

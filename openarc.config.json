@@ -1,0 +1,4 @@
+{
+  "$schema": "./spec/config.schema.json",
+  "theme": "system"
+}

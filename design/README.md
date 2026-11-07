@@ -91,7 +91,7 @@ Status always means the same thing everywhere: green is added, amber is changed,
 
 ## Themes
 
-The viewer follows the system setting by default. The theme switch sets `data-theme` on `<html>`, and the choice is remembered in the browser.
+The theme is chosen in [`openarc.config.json`](../openarc.config.json) with the `theme` setting. The default, `system`, follows the reader's operating system between `light` and `dark`. Any other value names a theme file, and the build sets `data-theme` on the page's `<html>` to fix it.
 
 ### Adding a theme
 
@@ -99,7 +99,7 @@ The viewer follows the system setting by default. The theme switch sets `data-th
 2. Set `$extensions.openarc.name` to `<name>` and `scheme` to `light` or `dark`.
 3. Point each token at a primitive, adding primitives to `design/tokens/primitives.json` if you need new colours.
 4. Run the build. It fails if the new theme is missing a token or defines one the others don't.
-5. Add the name to `THEMES` in `viewer/index.html` so it appears in the switch.
+5. Set `"theme": "<name>"` in `openarc.config.json` to use it.
 
 Its CSS appears as `:root[data-theme="<name>"]`. Only colours and shadows are themeable. Spacing, type and sizes are shared, so the diagram has the same layout in every theme.
 
