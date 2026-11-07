@@ -50,7 +50,7 @@ p, h1, h2, h3 { margin: 0; }
 .legend .sw-added { background: var(--color-status-added-solid); }
 .legend .sw-changed { background: var(--color-status-changed-solid); }
 .legend .sw-removed { background: var(--color-status-removed-solid); }
-.legend .sw-context { outline: var(--border-width) dashed var(--color-status-context-solid); outline-offset: calc(-1 * var(--border-width)); }
+.legend .sw-context { background: var(--color-surface-sunken); outline: var(--border-width) solid var(--color-border-strong); outline-offset: calc(-1 * var(--border-width)); }
 .legend svg { width: var(--space-6); height: var(--space-2); flex: none; overflow: visible; }
 .legend path { stroke: var(--color-text-tertiary); stroke-width: var(--diagram-edge-width); fill: none; }
 .legend .ln-inferred { stroke-dasharray: var(--diagram-dash-inferred); }
@@ -64,9 +64,9 @@ p, h1, h2, h3 { margin: 0; }
 
 /* ---------- status pills, used on cards and in the inspector ---------- */
 .pill { display: inline-flex; align-items: center; height: var(--type-overline-line); padding: 0 var(--space-1); border-radius: var(--radius-xs); flex: none; }
-.s-added > .pill, .pill.s-added, .stat.s-added { color: var(--color-status-added-text); background: var(--color-status-added-subtle); }
-.s-changed > .pill, .pill.s-changed, .stat.s-changed { color: var(--color-status-changed-text); background: var(--color-status-changed-subtle); }
-.s-removed > .pill, .pill.s-removed, .stat.s-removed { color: var(--color-status-removed-text); background: var(--color-status-removed-subtle); }
+.pill.s-added, .stat.s-added, .count.s-added, .whole.s-added { color: var(--color-status-added-text); background: var(--color-status-added-subtle); }
+.pill.s-changed, .stat.s-changed, .count.s-changed { color: var(--color-status-changed-text); background: var(--color-status-changed-subtle); }
+.pill.s-removed, .stat.s-removed, .count.s-removed, .whole.s-removed { color: var(--color-status-removed-text); background: var(--color-status-removed-subtle); }
 .pill.s-context { color: var(--color-status-context-text); background: var(--color-status-context-subtle); }
 .tag { display: inline-flex; align-items: center; height: var(--type-code-meta-line); padding: 0 var(--space-1); border-radius: var(--radius-xs); color: var(--color-text-tertiary); outline: var(--border-width) solid var(--color-border-default); outline-offset: calc(-1 * var(--border-width)); }
 
@@ -78,18 +78,17 @@ p, h1, h2, h3 { margin: 0; }
 #edges { position: absolute; left: 0; top: 0; overflow: visible; pointer-events: none; }
 
 .card { position: absolute; display: flex; flex-direction: column; background: var(--color-surface-card); border-radius: var(--radius-lg); outline: var(--border-width) solid var(--color-border-default); outline-offset: calc(-1 * var(--border-width)); box-shadow: var(--shadow-raised); overflow: hidden; transition: opacity var(--motion-duration-base); }
-.card::before { content: ""; position: absolute; inset: 0 auto 0 0; width: var(--card-stripe); }
-.card.s-added::before { background: var(--color-status-added-solid); }
-.card.s-changed::before { background: var(--color-status-changed-solid); }
-.card.s-removed::before { background: var(--color-status-removed-solid); }
-.card.s-context { background: var(--color-surface-sunken); outline-style: dashed; box-shadow: none; }
+.card.s-context { background: var(--color-surface-sunken); box-shadow: none; }
 .card.selc { box-shadow: 0 0 0 var(--border-width-strong) var(--color-accent-solid), var(--shadow-raised); }
 .card-head { flex: none; height: var(--card-head-height); padding: var(--card-padding-y) var(--card-padding-x); cursor: pointer; }
 .card-meta { display: flex; align-items: center; gap: var(--space-2); height: var(--type-code-meta-line); color: var(--color-text-quaternary); white-space: nowrap; }
 .card-meta .path { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
-.card-meta .pill { margin-left: auto; }
 .card-title { display: flex; align-items: center; gap: var(--space-2); height: var(--type-heading-line); }
-.card-title .cname { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.card-title .cname { min-width: 0; margin-right: auto; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.card-title .step { margin-left: 0; }
+.counts { display: inline-flex; gap: var(--space-1); flex: none; }
+.count { display: inline-flex; align-items: center; height: var(--type-code-sm-line); padding: 0 var(--space-1); border-radius: var(--radius-xs); font-weight: var(--font-weight-semibold); }
+.whole { display: inline-grid; place-items: center; flex: none; width: var(--badge-mark); height: var(--badge-mark); border-radius: var(--radius-xs); }
 .card.s-context .cname { color: var(--color-text-secondary); }
 .card-sum { flex: none; height: var(--card-summary-height); padding: 0 var(--card-padding-x) var(--card-padding-y); color: var(--color-text-tertiary); overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
 .rows { flex: none; list-style: none; margin: 0; padding: var(--card-padding-y) 0; box-shadow: inset 0 var(--border-width) 0 var(--color-border-subtle); }
@@ -104,7 +103,12 @@ p, h1, h2, h3 { margin: 0; }
 .row .sig { min-width: 0; overflow: hidden; text-overflow: ellipsis; color: var(--color-text-quaternary); }
 .row.s-removed .mn { text-decoration: line-through; text-decoration-color: var(--color-status-removed-solid); color: var(--color-text-tertiary); }
 .row.s-context .mn { color: var(--color-text-tertiary); }
-.row.sel { background: var(--color-surface-selected); }
+/* Inside a changed class, changed members are tinted like lines in a diff, with a bar.
+   In a wholly added or removed class the rows stay plain: the square in the header says it. */
+.card.s-changed .row.s-added { background: var(--color-status-added-subtle); box-shadow: inset var(--card-row-bar) 0 0 var(--color-status-added-solid); }
+.card.s-changed .row.s-changed { background: var(--color-status-changed-subtle); box-shadow: inset var(--card-row-bar) 0 0 var(--color-status-changed-solid); }
+.card.s-changed .row.s-removed { background: var(--color-status-removed-subtle); box-shadow: inset var(--card-row-bar) 0 0 var(--color-status-removed-solid); }
+.card .rows .row.sel { background: var(--color-surface-selected); }
 .row.sel .mn { color: var(--color-accent-text); }
 .step { display: none; align-items: center; justify-content: center; flex: none; width: var(--badge-size); height: var(--badge-size); margin-left: auto; border-radius: var(--radius-full); background: var(--color-accent-solid); color: var(--color-text-on-accent); }
 .step.on { display: inline-flex; }
@@ -345,11 +349,26 @@ function textWidth(role, text) {
   const t = token(`type-${role}-case`) === "uppercase" ? text.toUpperCase() : text;
   return measure.measureText(t).width + tracking * sz * t.length;
 }
+// Header marks: counts of what changed inside, and a square when the whole class came or went.
+const memberCounts = (c) => {
+  const n = { added: 0, changed: 0, removed: 0 };
+  for (const m of c.members) if (m.status in n) n[m.status]++;
+  return Object.entries(n).filter(([, v]) => v);
+};
+const WHOLE = { added: "New class", removed: "Removed class" };
+function changeMarks(c) {
+  if (c.status === "context") return "";
+  const counts = memberCounts(c).map(([s, v]) => `<span class="count s-${s}">${GUTTER[s]}${v}</span>`).join("");
+  const whole = WHOLE[c.status] ? `<span class="whole s-${c.status} type-code-strong" title="${WHOLE[c.status]}" aria-label="${WHOLE[c.status]}">${GUTTER[c.status]}</span>` : "";
+  return `${counts ? `<span class="counts type-code-sm">${counts}</span>` : ""}${whole}`;
+}
 function naturalWidth(c) {
-  const pill = textWidth("overline", STATUS_LABEL[c.status]) + 2 * size("space-1");
+  const sp1 = size("space-1");
+  const counts = c.status === "context" ? 0 : memberCounts(c).reduce((w, [s, v]) => w + textWidth("code-sm", GUTTER[s] + v) + 2 * sp1 + sp1, 0);
+  const marks = counts + (WHOLE[c.status] ? L.gap + size("badge-mark") : 0);
   const head = Math.max(
-    textWidth("code-meta", c.kind) + L.gap + Math.min(textWidth("code-meta", shortPath(c.file)), L.wMin / 2) + L.gap + pill,
-    textWidth("heading", c.name) + L.gap + L.badge,
+    textWidth("code-meta", c.kind) + L.gap + Math.min(textWidth("code-meta", shortPath(c.file)), L.wMin / 2),
+    textWidth("heading", c.name) + L.gap + marks + L.gap + L.badge,
   );
   const rows = c.members.map((m) =>
     L.gutter + L.gap + L.kind + L.gap + textWidth("code-strong", m.name) + L.gap + textWidth("code-sm", shortSig(m.signature)) + L.gap + L.badge);
@@ -396,8 +415,8 @@ nodesEl.innerHTML = laid.children.map((n) => {
   return `
     <div class="card s-${c.status}" data-c="${esc(c.id)}" style="left:${p.x}px;top:${p.y}px;width:${p.w}px;height:${p.h}px">
       <div class="card-head" data-id="${esc(c.id)}">
-        <div class="card-meta type-code-meta"><span class="kind">${esc(c.kind)}</span><span class="path">${esc(shortPath(c.file))}</span><span class="pill type-overline">${STATUS_LABEL[c.status]}</span></div>
-        <div class="card-title"><span class="cname type-heading">${esc(c.name)}</span><span class="step type-label"></span></div>
+        <div class="card-meta type-code-meta"><span class="kind">${esc(c.kind)}</span><span class="path">${esc(shortPath(c.file))}</span></div>
+        <div class="card-title"><span class="cname type-heading">${esc(c.name)}</span>${changeMarks(c)}<span class="step type-label"></span></div>
       </div>
       ${c.summary ? `<p class="card-sum type-caption">${esc(c.summary)}</p>` : ""}
       <ul class="rows">${c.members.map((m) => `

@@ -33,6 +33,10 @@
     "dot": {
       "$value": "8px",
       "$description": "Status dots"
+    },
+    "mark": {
+      "$value": "18px",
+      "$description": "The square marking a wholly added or removed class"
     }
   },
   "card": {
@@ -68,9 +72,9 @@
       "$value": "40px",
       "$description": "Width of the member kind column"
     },
-    "stripe": {
-      "$value": "4px",
-      "$description": "Status stripe on the card's leading edge"
+    "row-bar": {
+      "$value": "3px",
+      "$description": "Bar on the leading edge of a changed member's row"
     }
   },
   "diagram": {

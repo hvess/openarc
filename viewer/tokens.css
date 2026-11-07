@@ -128,6 +128,7 @@
   --control-icon: 16px;
   --badge-size: 20px;
   --badge-dot: 8px;
+  --badge-mark: 18px;
   --card-width-min: 256px;
   --card-width-max: 448px;
   --card-padding-x: 16px;
@@ -137,7 +138,7 @@
   --card-row-height: 32px;
   --card-gutter: 12px;
   --card-kind: 40px;
-  --card-stripe: 4px;
+  --card-row-bar: 3px;
   --diagram-layer-gap: 96px;
   --diagram-node-gap: 32px;
   --diagram-edge-gap: 4px;
