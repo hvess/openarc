@@ -66,7 +66,13 @@ export function buildTokens() {
     out.push(block(`.${name}`, [`font: var(--${name}-font);`, `letter-spacing: var(--${name}-tracking);`, `text-transform: var(--${name}-case);`]));
   }
 
-  return { css: out.join("\n\n") + "\n", themes: themes.map((t) => t.name) };
+  // Each theme's colours, fully resolved, for checks such as contrast.
+  const colors = Object.fromEntries(themes.map((t) => {
+    const scope = new Map([...all, ...t.tokens]);
+    return [t.name, new Map([...t.tokens].filter(([, tok]) => tok.type === "color").map(([p, tok]) => [p, resolve(tok.value, scope)]))];
+  }));
+
+  return { css: out.join("\n\n") + "\n", themes: themes.map((t) => t.name), colors };
 }
 
 // ---------------------------------------------------------------------------

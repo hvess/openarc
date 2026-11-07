@@ -15,6 +15,7 @@ import { fileURLToPath } from "node:url";
 import { buildTokens } from "./tokens.mjs";
 import { lintDesign } from "./lint-design.mjs";
 import { loadConfig } from "./config.mjs";
+import { checkContrast } from "./contrast.mjs";
 
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
 const dir = process.argv[2];
@@ -64,9 +65,12 @@ delete graph.change.klar;
 writeFileSync(join(dir, "graph.json"), JSON.stringify(graph, null, 2) + "\n");
 
 // Design tokens: regenerate the CSS, check the viewer only uses tokens, then inline both.
-const { css: tokensCSS, themes } = buildTokens();
+const { css: tokensCSS, themes, colors } = buildTokens();
 writeFileSync(join(root, "viewer/tokens.css"), tokensCSS);
-const designProblems = lintDesign();
+const designProblems = [
+  ...lintDesign(),
+  ...checkContrast(colors).filter((r) => !r.ok).map((r) => `${r.theme} theme: ${r.what} is ${r.ratio.toFixed(2)}:1, needs ${r.min}:1 (${r.fg} on ${r.bg})`),
+];
 if (designProblems.length) {
   console.error(designProblems.map((p) => "  ✗ " + p).join("\n"));
   process.exit(1);

@@ -19,11 +19,11 @@ tools/lint-design.mjs      fails the build if the viewer CSS uses a raw value
 
 | Layer | Example | Who may use it |
 |---|---|---|
-| **Primitive** | `palette.indigo.600` = `#4353d6` | Only themes and other tokens |
+| **Primitive** | `palette.jade.600` = `oklch(0.58 0.145 158)` | Only themes and other tokens |
 | **Semantic** | `color.accent.solid`, `space.4`, `type.heading` | Components |
 | **Component** | `card.row-height`, `inspector.width` | Components and the layout code |
 
-Components never refer to a primitive. A colour is always chosen for its role (`color.status.added.solid`), never its hue (`green.600`). That's what lets a theme change every colour without touching a component.
+Components never refer to a primitive. A colour is always chosen for its role (`color.status.added.solid`), never its hue (`jade.600`). That's what lets a theme change every colour without touching a component.
 
 Tokens use the [W3C Design Tokens format](https://tr.designtokens.org/format/): each token has a `$value` and a `$type`, groups can set `$type` for everything inside them, and `{group.token}` refers to another token. Tools such as Style Dictionary and Tokens Studio read the same files.
 
@@ -74,6 +74,14 @@ Apply a role with its class (`class="type-heading"`), which sets font, tracking 
 
 ## Colour
 
+The default palette, **Harmonic**, is defined in [OKLCH](https://oklch.com), where equal lightness looks equally light to the eye. That makes three rules possible:
+
+- **Neutrals carry the accent's hue.** The greys are the logo indigo (hue 275) at very low chroma, so surfaces, text and accent belong to one family.
+- **Status colours are siblings.** Jade (added, hue 158), saffron (changed, 70) and vermilion (removed, 22) share lightness and chroma at each step and differ only in hue, so none of them shouts louder than the others. Saffron sits a touch lighter, because yellow turns brown below L 0.6.
+- **Syntax colours follow the same steps.** Azure (names) and magenta (values) use the same lightness as the status solids.
+
+Ramps are named by hue (`neutral`, `indigo`, `jade`, `saffron`, `vermilion`, `azure`, `magenta`), and only themes refer to them. The logo indigo stays in hex (`#4353d6` light, `#8e99ff` dark).
+
 Each theme defines the same set of colour roles:
 
 | Group | Tokens | Meaning |
@@ -113,3 +121,5 @@ Its CSS appears as `:root[data-theme="<name>"]`. Only colours and shadows are th
 - `font-size` and `line-height` outside the type roles
 
 Media query conditions are exempt, because CSS custom properties can't be used there.
+
+`tools/contrast.mjs` measures WCAG contrast for every colour pairing the viewer uses, in every theme, and the build fails if one falls short: 4.5:1 for text, including Klar on added and removed lines, and 3:1 for status marks, edges and de-emphasised metadata. Run `node tools/contrast.mjs --all` to see every ratio.

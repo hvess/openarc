@@ -1,52 +1,30 @@
 {
-  "$description": "Raw values. Never used directly by components: themes and semantic tokens refer to these, and only semantic tokens reach CSS.",
+  "$description": "Raw values, in OKLCH so equal lightness looks equally light. Never used directly by components: themes and semantic tokens refer to these, and only semantic tokens reach CSS.",
   "palette": {
     "$type": "color",
     "neutral": {
-      "0": { "$value": "#ffffff" },
-      "25": { "$value": "#fafaf9" },
-      "50": { "$value": "#f4f4f2" },
-      "100": { "$value": "#ececea" },
-      "150": { "$value": "#e2e2df" },
-      "200": { "$value": "#d5d5d1" },
-      "300": { "$value": "#b9bab6" },
-      "400": { "$value": "#9a9ca1" },
-      "500": { "$value": "#7b7e85" },
-      "600": { "$value": "#5f626a" },
-      "700": { "$value": "#464950" },
-      "750": { "$value": "#36383e" },
-      "800": { "$value": "#2a2c31" },
-      "850": { "$value": "#212226" },
-      "900": { "$value": "#1b1c1f" },
-      "925": { "$value": "#16171a" },
-      "950": { "$value": "#111214" },
-      "1000": { "$value": "#000000" }
-    },
-    "green": {
-      "50": { "$value": "#e8f6ee" },
-      "100": { "$value": "#cdebd9" },
-      "400": { "$value": "#43c97f" },
-      "600": { "$value": "#1a8f4c" },
-      "700": { "$value": "#136b39" },
-      "900": { "$value": "#15301f" }
-    },
-    "amber": {
-      "50": { "$value": "#fcf2df" },
-      "100": { "$value": "#f7e0b5" },
-      "400": { "$value": "#e3a643" },
-      "600": { "$value": "#a86600" },
-      "700": { "$value": "#7d4c00" },
-      "900": { "$value": "#33280f" }
-    },
-    "red": {
-      "50": { "$value": "#fcebe8" },
-      "100": { "$value": "#f6cdc7" },
-      "400": { "$value": "#f06a5f" },
-      "600": { "$value": "#c5352a" },
-      "700": { "$value": "#9a2a21" },
-      "900": { "$value": "#3a1a17" }
+      "$description": "Greys carrying the logo indigo's hue (275) at very low chroma.",
+      "0": { "$value": "oklch(1 0 0)" },
+      "25": { "$value": "oklch(0.987 0.003 275)" },
+      "50": { "$value": "oklch(0.974 0.004 275)" },
+      "100": { "$value": "oklch(0.955 0.006 275)" },
+      "150": { "$value": "oklch(0.926 0.008 275)" },
+      "200": { "$value": "oklch(0.887 0.01 275)" },
+      "300": { "$value": "oklch(0.8 0.012 275)" },
+      "400": { "$value": "oklch(0.7 0.014 275)" },
+      "500": { "$value": "oklch(0.585 0.016 275)" },
+      "600": { "$value": "oklch(0.485 0.018 275)" },
+      "700": { "$value": "oklch(0.385 0.02 275)" },
+      "750": { "$value": "oklch(0.315 0.02 275)" },
+      "800": { "$value": "oklch(0.268 0.018 275)" },
+      "850": { "$value": "oklch(0.228 0.016 275)" },
+      "900": { "$value": "oklch(0.198 0.014 275)" },
+      "925": { "$value": "oklch(0.172 0.012 275)" },
+      "950": { "$value": "oklch(0.148 0.01 275)" },
+      "1000": { "$value": "oklch(0 0 0)" }
     },
     "indigo": {
+      "$description": "The logo colour. 600 and 400 are fixed; the rest are tints and shades of it.",
       "50": { "$value": "#eef0fe" },
       "100": { "$value": "#dadefd" },
       "300": { "$value": "#a8b0ff" },
@@ -55,13 +33,42 @@
       "700": { "$value": "#3341b0" },
       "900": { "$value": "#23264a" }
     },
-    "teal": {
-      "400": { "$value": "#4ccdab" },
-      "600": { "$value": "#0b7a63" }
+    "jade": {
+      "$description": "Added. Status ramps share lightness and chroma per step and differ only in hue.",
+      "50": { "$value": "oklch(0.966 0.024 158)" },
+      "100": { "$value": "oklch(0.925 0.05 158)" },
+      "400": { "$value": "oklch(0.775 0.135 158)" },
+      "600": { "$value": "oklch(0.58 0.145 158)" },
+      "700": { "$value": "oklch(0.47 0.12 158)" },
+      "900": { "$value": "oklch(0.262 0.042 158)" }
     },
-    "orange": {
-      "400": { "$value": "#f0905e" },
-      "600": { "$value": "#b8541a" }
+    "saffron": {
+      "$description": "Changed. Hue 70 keeps it golden rather than olive; lightness stops just above where yellow turns brown.",
+      "50": { "$value": "oklch(0.966 0.026 70)" },
+      "100": { "$value": "oklch(0.925 0.05 70)" },
+      "400": { "$value": "oklch(0.785 0.13 70)" },
+      "600": { "$value": "oklch(0.615 0.14 70)" },
+      "700": { "$value": "oklch(0.495 0.11 70)" },
+      "900": { "$value": "oklch(0.262 0.042 70)" }
+    },
+    "vermilion": {
+      "$description": "Removed.",
+      "50": { "$value": "oklch(0.966 0.024 22)" },
+      "100": { "$value": "oklch(0.925 0.05 22)" },
+      "400": { "$value": "oklch(0.775 0.135 22)" },
+      "600": { "$value": "oklch(0.58 0.165 22)" },
+      "700": { "$value": "oklch(0.47 0.12 22)" },
+      "900": { "$value": "oklch(0.262 0.042 22)" }
+    },
+    "azure": {
+      "$description": "Klar names and calls.",
+      "400": { "$value": "oklch(0.78 0.11 232)" },
+      "600": { "$value": "oklch(0.52 0.12 238)" }
+    },
+    "magenta": {
+      "$description": "Klar values.",
+      "400": { "$value": "oklch(0.78 0.12 345)" },
+      "600": { "$value": "oklch(0.53 0.16 350)" }
     }
   },
   "fontFamily": {
