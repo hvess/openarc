@@ -96,6 +96,24 @@
     "flow-width": {
       "$value": "3px"
     },
+    "arrow-length": {
+      "$value": "10px",
+      "$description": "Tip to back corners of an arrowhead at normal weight"
+    },
+    "arrow-width": {
+      "$value": "9px",
+      "$description": "Width across the back of an arrowhead"
+    },
+    "arrow-notch": {
+      "$type": "number",
+      "$value": 0.7,
+      "$description": "How far back the notch sits, as a share of arrow-length; lines end here"
+    },
+    "arrow-scale-strong": {
+      "$type": "number",
+      "$value": 1.4,
+      "$description": "Arrowhead scale for emphasised edges, matching edge-width-strong"
+    },
     "dot": {
       "$value": "1.25px",
       "$description": "Radius of a canvas grid dot"

@@ -144,6 +144,10 @@
   --diagram-edge-width: 1.5px;
   --diagram-edge-width-strong: 2.5px;
   --diagram-flow-width: 3px;
+  --diagram-arrow-length: 10px;
+  --diagram-arrow-width: 9px;
+  --diagram-arrow-notch: 0.7;
+  --diagram-arrow-scale-strong: 1.4;
   --diagram-dot: 1.25px;
   --diagram-dash-inferred: 6 4;
   --diagram-dash-data: 1.5 4;

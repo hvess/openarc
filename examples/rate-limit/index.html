@@ -154,6 +154,10 @@
   --diagram-edge-width: 1.5px;
   --diagram-edge-width-strong: 2.5px;
   --diagram-flow-width: 3px;
+  --diagram-arrow-length: 10px;
+  --diagram-arrow-width: 9px;
+  --diagram-arrow-notch: 0.7;
+  --diagram-arrow-scale-strong: 1.4;
   --diagram-dot: 1.25px;
   --diagram-dash-inferred: 6 4;
   --diagram-dash-data: 1.5 4;
@@ -526,23 +530,24 @@ p, h1, h2, h3 { margin: 0; }
 .step { display: none; align-items: center; justify-content: center; flex: none; width: var(--badge-size); height: var(--badge-size); margin-left: auto; border-radius: var(--radius-full); background: var(--color-accent-solid); color: var(--color-text-on-accent); }
 .step.on { display: inline-flex; }
 
-.edge { fill: none; stroke-width: var(--diagram-edge-width); transition: opacity var(--motion-duration-base), stroke-width var(--motion-duration-fast); }
-.edge.st-added { stroke: var(--color-status-added-solid); }
-.edge.st-changed { stroke: var(--color-status-changed-solid); }
-.edge.st-removed { stroke: var(--color-status-removed-solid); }
-.edge.st-context { stroke: var(--color-status-context-solid); }
-.edge.inferred { stroke-dasharray: var(--diagram-dash-inferred); }
-.edge.k-reads, .edge.k-writes { stroke-dasharray: var(--diagram-dash-data); stroke-linecap: round; }
-.edge.k-creates { stroke-width: var(--diagram-edge-width-strong); }
-.edge.hov, .edge.hl { stroke-width: var(--diagram-edge-width-strong); }
+.edge-g { color: var(--color-status-context-solid); transition: opacity var(--motion-duration-base); }
+.edge-g.st-added { color: var(--color-status-added-solid); }
+.edge-g.st-changed { color: var(--color-status-changed-solid); }
+.edge-g.st-removed { color: var(--color-status-removed-solid); }
+.edge { fill: none; stroke: currentColor; stroke-width: var(--diagram-edge-width); stroke-linecap: round; transition: stroke-width var(--motion-duration-fast); }
+.edge-g.inferred .edge { stroke-dasharray: var(--diagram-dash-inferred); stroke-linecap: butt; }
+.edge-g.k-reads .edge, .edge-g.k-writes .edge { stroke-dasharray: var(--diagram-dash-data); }
+.head { fill: currentColor; stroke: currentColor; stroke-width: var(--border-width); stroke-linejoin: round; transform-box: view-box; transform-origin: 0 0; transition: transform var(--motion-duration-fast); }
+.edge-g.k-creates .edge, .edge-g.hov .edge, .edge-g.hl .edge { stroke-width: var(--diagram-edge-width-strong); }
+.edge-g.k-creates .head, .edge-g.hov .head, .edge-g.hl .head { transform: scale(var(--diagram-arrow-scale-strong)); }
 .flowpath { fill: none; stroke: var(--color-accent-solid); stroke-width: var(--diagram-flow-width); stroke-linecap: round; stroke-dasharray: var(--diagram-dash-flow); animation: march var(--motion-duration-slow) linear infinite; }
 @keyframes march { to { stroke-dashoffset: calc(-1 * var(--diagram-dash-flow-period)); } }
-.m-added { fill: var(--color-status-added-solid); } .m-changed { fill: var(--color-status-changed-solid); }
-.m-removed { fill: var(--color-status-removed-solid); } .m-context { fill: var(--color-status-context-solid); } .m-accent { fill: var(--color-accent-solid); }
+.flowheads { color: var(--color-accent-solid); }
+.flowheads .head { transform: scale(var(--diagram-arrow-scale-strong)); }
 
 .focus .card:not(.hl) { opacity: var(--opacity-dimmed); }
 .focus .card.hl .row:not(.hl) { opacity: var(--opacity-dimmed-row); }
-.focus .edge:not(.hl) { opacity: var(--opacity-dimmed-edge); }
+.focus .edge-g:not(.hl) { opacity: var(--opacity-dimmed-edge); }
 
 .zoombar { position: absolute; right: var(--space-4); bottom: var(--space-4); z-index: var(--layer-canvas-controls); display: flex; align-items: center; height: var(--control-height); background: var(--color-surface-panel); border-radius: var(--radius-md); outline: var(--border-width) solid var(--color-border-default); outline-offset: calc(-1 * var(--border-width)); box-shadow: var(--shadow-raised); overflow: hidden; transition: right var(--motion-duration-base) var(--motion-easing-standard); }
 #app.inspecting .zoombar { right: calc(var(--inspector-width) + var(--space-4)); }
@@ -841,6 +846,10 @@ nodesEl.innerHTML = laid.children.map((n) => {
 const worldW = laid.width, worldH = laid.height;
 
 // ---------- edges ----------
+// Every edge leaves and enters a card horizontally. The line stops at the arrowhead's
+// notch, and the head is its own shape so it can grow with the line when emphasised.
+const AR = { len: size("diagram-arrow-length"), wid: size("diagram-arrow-width"), notch: size("diagram-arrow-notch") };
+const HEAD = `M0,0 L${-AR.len},${-AR.wid / 2} Q${-AR.len * AR.notch},0 ${-AR.len},${AR.wid / 2} Z`;
 function anchor(id, side, gap = 0) {
   const c = compOf(id), p = pos[c.id];
   let y = p.y + L.headH / 2;
@@ -848,31 +857,35 @@ function anchor(id, side, gap = 0) {
   if (i >= 0) y = p.y + L.headH + (c.summary ? L.sumH : 0) + L.padY + i * L.rowH + L.rowH / 2;
   return { x: side === "r" ? p.x + p.w + gap : p.x - gap, y };
 }
+function curve(a, c1x, c2x, b) {
+  const dir = Math.sign(b.x - c2x) || 1, endX = b.x - dir * AR.len * AR.notch;
+  return { d: `M${a.x},${a.y} C${c1x},${a.y} ${c2x},${b.y} ${endX},${b.y}`, tip: b, dir };
+}
 function pathBetween(from, to) {
   const cs = compOf(from), ct = compOf(to), ps = pos[cs.id], pt = pos[ct.id], g = L.edgeGap, bend = L.layerGap / 2;
   if (cs === ct) {
     const a = anchor(from, "r"), b = anchor(to, "r", g), bx = L.padX + Math.abs(b.y - a.y) / 4;
-    return `M${a.x},${a.y} C${a.x + bx},${a.y} ${b.x + bx},${b.y} ${b.x},${b.y}`;
+    return curve(a, a.x + bx, b.x + bx, b);
   }
   if (pt.x >= ps.x + ps.w) {
     const a = anchor(from, "r"), b = anchor(to, "l", g), dx = Math.max(bend, (b.x - a.x) / 2);
-    return `M${a.x},${a.y} C${a.x + dx},${a.y} ${b.x - dx},${b.y} ${b.x},${b.y}`;
+    return curve(a, a.x + dx, b.x - dx, b);
   }
   if (pt.x + pt.w <= ps.x) {
     const a = anchor(from, "l"), b = anchor(to, "r", g), dx = Math.max(bend, (a.x - b.x) / 2);
-    return `M${a.x},${a.y} C${a.x - dx},${a.y} ${b.x + dx},${b.y} ${b.x},${b.y}`;
+    return curve(a, a.x - dx, b.x + dx, b);
   }
   const a = anchor(from, "r"), b = anchor(to, "r", g), xm = Math.max(a.x, b.x) + bend;
-  return `M${a.x},${a.y} C${xm},${a.y} ${xm},${b.y} ${b.x},${b.y}`;
+  return curve(a, xm, xm, b);
 }
+const headAt = (p) => `<g transform="translate(${p.tip.x},${p.tip.y}) rotate(${p.dir > 0 ? 0 : 180})"><path class="head" d="${HEAD}"/></g>`;
 const svg = $("#edges");
 svg.setAttribute("width", worldW); svg.setAttribute("height", worldH);
-svg.innerHTML = `<defs>${["added", "changed", "removed", "context", "accent"].map((s) => `
-  <marker id="ar-${s}" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="8" markerHeight="8" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
-    <path d="M0,0.5 L7.5,4 L0,7.5 z" class="m-${s}"/></marker>`).join("")}</defs>
-  <g id="edgeLayer">${edges.map((e) => `<path class="edge st-${e.status} k-${e.kind} ${e.resolution !== "static" ? "inferred" : ""}" data-i="${e.i}" d="${pathBetween(e.from, e.to)}" marker-end="url(#ar-${e.status})"><title>${esc(e.kind)}${e.label ? " — " + esc(e.label) : ""}</title></path>`).join("")}</g>
-  <g id="flowLayer"></g>`;
-const edgeEls = $$(".edge", svg);
+svg.innerHTML = `<g id="edgeLayer">${edges.map((e) => {
+  const p = pathBetween(e.from, e.to);
+  return `<g class="edge-g st-${e.status} k-${e.kind}${e.resolution !== "static" ? " inferred" : ""}" data-i="${e.i}"><title>${esc(e.kind)}${e.label ? " — " + esc(e.label) : ""}</title><path class="edge" d="${p.d}"/>${headAt(p)}</g>`;
+}).join("")}</g><g id="flowLayer"></g>`;
+const edgeEls = $$(".edge-g", svg);
 
 // ---------- pan / zoom ----------
 const stage = $("#stage"), world = $("#world");
@@ -981,9 +994,8 @@ function highlight() {
   if (S.flow) {
     const f = G.flows.find((x) => x.id === S.flow);
     f.steps.forEach((s, i) => { nodes.add(s); if (!steps.has(s)) steps.set(s, i + 1); });
-    let d = "";
-    for (let i = 0; i < f.steps.length - 1; i++) d += pathBetween(f.steps[i], f.steps[i + 1]) + " ";
-    flowLayer.innerHTML = `<path class="flowpath" d="${d}" marker-end="url(#ar-accent)"/>`;
+    const segs = f.steps.slice(1).map((s, i) => pathBetween(f.steps[i], s));
+    flowLayer.innerHTML = `<path class="flowpath" d="${segs.map((x) => x.d).join(" ")}"/><g class="flowheads">${segs.map(headAt).join("")}</g>`;
   }
   if (S.note != null) for (const r of G.notes[S.note].refs) { nodes.add(r); relatedEdges(r).forEach((e) => hlEdges.add(e.i)); }
   if (S.sel) {
