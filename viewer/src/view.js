@@ -5,7 +5,7 @@
 import { L, narrow } from "./util.js";
 
 // size: the diagram's { width, height }. painter: from createEdgePainter().
-export function createView({ stage, world, grid, pct, drawer, zoombar, painter, size }) {
+export function createView({ stage, world, pct, drawer, zoombar, painter, size }) {
   const T = { x: 0, y: 0, k: 1 };
   let box = stage.getBoundingClientRect();
   let queued = false, lastK = null, settleTimer = 0, settled = true, far = false;
@@ -22,14 +22,9 @@ export function createView({ stage, world, grid, pct, drawer, zoombar, painter, 
   function render() {
     queued = false;
     world.style.transform = `translate(${T.x}px,${T.y}px) scale(${T.k})`;
-    // The dot grid is its own layer and only moves by less than one tile, so panning never repaints it.
-    const s = L.canvas * T.k, mod = (v) => (((v - s / 2) % s) + s) % s;
-    grid.style.transform = `translate(${mod(T.x) - s}px,${mod(T.y) - s}px)`;
     frame();
     if (T.k === lastK) return;
     lastK = T.k;
-    grid.style.width = `calc(100% + ${2 * s}px)`; grid.style.height = `calc(100% + ${2 * s}px)`;
-    grid.style.backgroundSize = `${s}px ${s}px`;
     pct.textContent = Math.round(T.k * 100) + "%";
     // The GPU layer keeps the scale it was drawn at, so text blurs while zooming. Once zooming
     // stops, switch detail level and redraw the layer sharp, together, in one pass.

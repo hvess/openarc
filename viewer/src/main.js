@@ -61,7 +61,7 @@ const hlLayer = $("#hlLayer"), hovLayer = $("#hovLayer"), flowLayer = $("#flowLa
 const edgeMarkup = (i, cls) => edgeHTML(edges[i], paths[i], cls);
 
 const view = createView({
-  stage, world, grid: $("#grid"), pct: $(".pct"), drawer, zoombar: $(".zoombar"), painter,
+  stage, world, pct: $(".pct"), drawer, zoombar: $(".zoombar"), painter,
   size: { width: laid.width, height: laid.height },
 });
 const focusIds = (ids) => view.focus(ids.map((id) => pos.get(compOf(id)?.id)).filter(Boolean));

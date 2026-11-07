@@ -68,16 +68,14 @@ p, h1, h2, h3 { margin: 0; }
 
 /* ---------- canvas ---------- */
 #stage { position: relative; overflow: clip; cursor: grab; touch-action: none; user-select: none; -webkit-user-select: none; }
-/* The dot grid is its own layer and only moves by less than one tile, so panning never repaints it. */
-#grid { position: absolute; left: 0; top: 0; pointer-events: none; will-change: transform;
-  background-image: radial-gradient(circle, var(--color-canvas-dot) var(--diagram-dot), transparent calc(var(--diagram-dot) * 1.25)); }
 #loading { position: absolute; inset: 0; display: grid; place-items: center; padding: var(--space-6); text-align: center; color: var(--color-text-tertiary); pointer-events: none; }
 #loading.failed { color: var(--color-status-removed-text); }
 #stage.dragging { cursor: grabbing; }
 /* The world is one composited layer: panning and zooming move pixels the GPU already has. */
 #world { position: absolute; left: 0; top: 0; transform-origin: 0 0; will-change: transform; }
-/* Edges are a bitmap painted by a worker and moved with the view. Dimming fades the whole
-   canvas; emphasis (hover, selection, flows) is drawn on #overlay, its own small layer. */
+/* The background, its dot grid and the edges are one opaque bitmap, painted by a worker and moved
+   with the view, so the GPU composites a single full-screen layer under the cards. Dimming fades
+   the bitmap; emphasis (hover, selection, flows) is drawn on #overlay, its own small layer. */
 #edges { position: absolute; left: 0; top: 0; transform-origin: 0 0; pointer-events: none; will-change: transform; transition: opacity var(--motion-duration-base); }
 #overlay { position: absolute; left: 0; top: 0; overflow: visible; pointer-events: none; will-change: transform; }
 
@@ -214,7 +212,6 @@ pre.code .no { display: inline-block; width: var(--space-10); padding-right: var
 <div id="app">
   <aside id="side"></aside>
   <main id="stage">
-    <div id="grid"></div>
     <canvas id="edges"></canvas>
     <div id="world"><svg id="overlay"></svg><div id="nodes"></div></div>
     <div id="loading" class="type-label">Laying out the diagram…</div>

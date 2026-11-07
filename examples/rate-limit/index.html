@@ -467,16 +467,14 @@ p, h1, h2, h3 { margin: 0; }
 
 /* ---------- canvas ---------- */
 #stage { position: relative; overflow: clip; cursor: grab; touch-action: none; user-select: none; -webkit-user-select: none; }
-/* The dot grid is its own layer and only moves by less than one tile, so panning never repaints it. */
-#grid { position: absolute; left: 0; top: 0; pointer-events: none; will-change: transform;
-  background-image: radial-gradient(circle, var(--color-canvas-dot) var(--diagram-dot), transparent calc(var(--diagram-dot) * 1.25)); }
 #loading { position: absolute; inset: 0; display: grid; place-items: center; padding: var(--space-6); text-align: center; color: var(--color-text-tertiary); pointer-events: none; }
 #loading.failed { color: var(--color-status-removed-text); }
 #stage.dragging { cursor: grabbing; }
 /* The world is one composited layer: panning and zooming move pixels the GPU already has. */
 #world { position: absolute; left: 0; top: 0; transform-origin: 0 0; will-change: transform; }
-/* Edges are a bitmap painted by a worker and moved with the view. Dimming fades the whole
-   canvas; emphasis (hover, selection, flows) is drawn on #overlay, its own small layer. */
+/* The background, its dot grid and the edges are one opaque bitmap, painted by a worker and moved
+   with the view, so the GPU composites a single full-screen layer under the cards. Dimming fades
+   the bitmap; emphasis (hover, selection, flows) is drawn on #overlay, its own small layer. */
 #edges { position: absolute; left: 0; top: 0; transform-origin: 0 0; pointer-events: none; will-change: transform; transition: opacity var(--motion-duration-base); }
 #overlay { position: absolute; left: 0; top: 0; overflow: visible; pointer-events: none; will-change: transform; }
 
@@ -613,7 +611,6 @@ pre.code .no { display: inline-block; width: var(--space-10); padding-right: var
 <div id="app">
   <aside id="side"></aside>
   <main id="stage">
-    <div id="grid"></div>
     <canvas id="edges"></canvas>
     <div id="world"><svg id="overlay"></svg><div id="nodes"></div></div>
     <div id="loading" class="type-label">Laying out the diagram…</div>
@@ -7651,10 +7648,12 @@ return { HEAD, createGeometry, headAt, edgeHTML };
 })();
 
 const __painter_js = (() => {
-// The base layer of edges is one bitmap, painted off the main thread. A worker draws the edges
-// in view, plus diagram.edge-margin on each side, and each frame the page only moves and scales
-// that bitmap. A new one is painted when the view leaves the painted area or changes detail
-// level, and once zooming stops, so lines are sharp at the new scale.
+// The canvas background, its dot grid and the base layer of edges are one opaque bitmap, painted
+// off the main thread. One opaque layer is what keeps panning at full frame rate: a separate
+// transparent grid and edge layer, each the size of the screen, cost the GPU half its frames on a
+// large high-density display. A worker draws the view plus diagram.edge-margin on each side, and
+// each frame the page only moves and scales that bitmap. A new one is painted when the view leaves
+// the painted area or changes detail level, and once zooming stops, so it is sharp at the new scale.
 
 const { token, num, L } = __util_js;
 const { HEAD } = __edges_js;
@@ -7664,8 +7663,22 @@ const { STATUS } = __model_js;
 // be self-contained.
 function paint(ctx, job, lines, ink, head) {
   const { t, w, h, dpr, mx, my } = job;
+  const W = ctx.canvas.width, H = ctx.canvas.height;
   ctx.setTransform(1, 0, 0, 1, 0, 0);
-  ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+  ctx.fillStyle = ink.bg;
+  ctx.fillRect(0, 0, W, H);
+  // Dots sit at multiples of grid.canvas in diagram space and keep their size on screen, so the
+  // tile is drawn at screen scale and repeated. Its size is rounded to whole pixels and the pattern
+  // scaled back, so dots never drift across a wide view.
+  const step = ink.grid * t.k * dpr, size = Math.max(1, Math.round(step)), f = step / size;
+  const tile = typeof OffscreenCanvas === "undefined" ? Object.assign(document.createElement("canvas"), { width: size, height: size }) : new OffscreenCanvas(size, size);
+  const tc = tile.getContext("2d");
+  tc.fillStyle = ink.dot;
+  tc.beginPath(); tc.arc(size / 2, size / 2, (ink.dotR * dpr) / f, 0, 2 * Math.PI); tc.fill();
+  const dots = ctx.createPattern(tile, "repeat");
+  dots.setTransform(new DOMMatrix([f, 0, 0, f, dpr * (t.x + mx) - step / 2, dpr * (t.y + my) - step / 2]));
+  ctx.fillStyle = dots;
+  ctx.fillRect(0, 0, W, H);
   ctx.setTransform(dpr * t.k, 0, 0, dpr * t.k, dpr * (t.x + mx), dpr * (t.y + my));
   const vx0 = (-mx - t.x) / t.k, vy0 = (-my - t.y) / t.k, vx1 = vx0 + (w + 2 * mx) / t.k, vy1 = vy0 + (h + 2 * my) / t.k;
   ctx.lineJoin = "round";
@@ -7699,7 +7712,7 @@ onmessage = ({ data: m }) => {
   if (m.ink) ink = m.ink;
   if (!m.job) return;
   const j = m.job, c = new OffscreenCanvas(Math.max(1, Math.round((j.w + 2 * j.mx) * j.dpr)), Math.max(1, Math.round((j.h + 2 * j.my) * j.dpr)));
-  paint(c.getContext("2d"), j, j.far ? lines.card : lines.member, ink, head);
+  paint(c.getContext("2d", { alpha: false }), j, j.far ? lines.card : lines.member, ink, head);
   const bitmap = c.transferToImageBitmap();
   postMessage({ job: j, bitmap }, [bitmap]);
 };`;
@@ -7716,12 +7729,13 @@ function readInk() {
     color: Object.fromEntries(Object.keys(STATUS).map((st) => [st, token(`color-status-${st}-solid`)])),
     width: num("diagram-edge-width"), strong: num("diagram-edge-width-strong"), headScale: num("diagram-arrow-scale-strong"),
     border: num("border-width"), inferred: dash("diagram-dash-inferred"), data: dash("diagram-dash-data"),
+    bg: token("color-canvas-bg"), dot: token("color-canvas-dot"), dotR: num("diagram-dot"), grid: num("grid-canvas"),
   };
 }
 
 // lines: { member: [...], card: [...] } from toLine(); card lines are drawn in the far view.
 function createEdgePainter(canvas, lines) {
-  const out = canvas.getContext("bitmaprenderer");
+  const out = canvas.getContext("bitmaprenderer", { alpha: false });
   let worker = null, busy = false, again = false, shown = null, timer = 0, local = null, view = null;
   try {
     if (typeof OffscreenCanvas === "undefined") throw new Error("no OffscreenCanvas");
@@ -7763,7 +7777,7 @@ function createEdgePainter(canvas, lines) {
       local ??= { head: new Path2D(HEAD), lines: withPaths(lines) };
       const j = job(), c = document.createElement("canvas");
       c.width = Math.max(1, Math.round((j.w + 2 * j.mx) * j.dpr)); c.height = Math.max(1, Math.round((j.h + 2 * j.my) * j.dpr));
-      paint(c.getContext("2d"), j, j.far ? local.lines.card : local.lines.member, readInk(), local.head);
+      paint(c.getContext("2d", { alpha: false }), j, j.far ? local.lines.card : local.lines.member, readInk(), local.head);
       show(j, await createImageBitmap(c));
     }, L.paintDelay);
   }
@@ -7799,7 +7813,7 @@ const __view_js = (() => {
 const { L, narrow } = __util_js;
 
 // size: the diagram's { width, height }. painter: from createEdgePainter().
-function createView({ stage, world, grid, pct, drawer, zoombar, painter, size }) {
+function createView({ stage, world, pct, drawer, zoombar, painter, size }) {
   const T = { x: 0, y: 0, k: 1 };
   let box = stage.getBoundingClientRect();
   let queued = false, lastK = null, settleTimer = 0, settled = true, far = false;
@@ -7816,14 +7830,9 @@ function createView({ stage, world, grid, pct, drawer, zoombar, painter, size })
   function render() {
     queued = false;
     world.style.transform = `translate(${T.x}px,${T.y}px) scale(${T.k})`;
-    // The dot grid is its own layer and only moves by less than one tile, so panning never repaints it.
-    const s = L.canvas * T.k, mod = (v) => (((v - s / 2) % s) + s) % s;
-    grid.style.transform = `translate(${mod(T.x) - s}px,${mod(T.y) - s}px)`;
     frame();
     if (T.k === lastK) return;
     lastK = T.k;
-    grid.style.width = `calc(100% + ${2 * s}px)`; grid.style.height = `calc(100% + ${2 * s}px)`;
-    grid.style.backgroundSize = `${s}px ${s}px`;
     pct.textContent = Math.round(T.k * 100) + "%";
     // The GPU layer keeps the scale it was drawn at, so text blurs while zooming. Once zooming
     // stops, switch detail level and redraw the layer sharp, together, in one pass.
@@ -8268,7 +8277,7 @@ const hlLayer = $("#hlLayer"), hovLayer = $("#hovLayer"), flowLayer = $("#flowLa
 const edgeMarkup = (i, cls) => edgeHTML(edges[i], paths[i], cls);
 
 const view = createView({
-  stage, world, grid: $("#grid"), pct: $(".pct"), drawer, zoombar: $(".zoombar"), painter,
+  stage, world, pct: $(".pct"), drawer, zoombar: $(".zoombar"), painter,
   size: { width: laid.width, height: laid.height },
 });
 const focusIds = (ids) => view.focus(ids.map((id) => pos.get(compOf(id)?.id)).filter(Boolean));

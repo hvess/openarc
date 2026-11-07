@@ -1,7 +1,9 @@
-// The base layer of edges is one bitmap, painted off the main thread. A worker draws the edges
-// in view, plus diagram.edge-margin on each side, and each frame the page only moves and scales
-// that bitmap. A new one is painted when the view leaves the painted area or changes detail
-// level, and once zooming stops, so lines are sharp at the new scale.
+// The canvas background, its dot grid and the base layer of edges are one opaque bitmap, painted
+// off the main thread. One opaque layer is what keeps panning at full frame rate: a separate
+// transparent grid and edge layer, each the size of the screen, cost the GPU half its frames on a
+// large high-density display. A worker draws the view plus diagram.edge-margin on each side, and
+// each frame the page only moves and scales that bitmap. A new one is painted when the view leaves
+// the painted area or changes detail level, and once zooming stops, so it is sharp at the new scale.
 
 import { token, num, L } from "./util.js";
 import { HEAD } from "./edges.js";
@@ -11,8 +13,22 @@ import { STATUS } from "./model.js";
 // be self-contained.
 function paint(ctx, job, lines, ink, head) {
   const { t, w, h, dpr, mx, my } = job;
+  const W = ctx.canvas.width, H = ctx.canvas.height;
   ctx.setTransform(1, 0, 0, 1, 0, 0);
-  ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+  ctx.fillStyle = ink.bg;
+  ctx.fillRect(0, 0, W, H);
+  // Dots sit at multiples of grid.canvas in diagram space and keep their size on screen, so the
+  // tile is drawn at screen scale and repeated. Its size is rounded to whole pixels and the pattern
+  // scaled back, so dots never drift across a wide view.
+  const step = ink.grid * t.k * dpr, size = Math.max(1, Math.round(step)), f = step / size;
+  const tile = typeof OffscreenCanvas === "undefined" ? Object.assign(document.createElement("canvas"), { width: size, height: size }) : new OffscreenCanvas(size, size);
+  const tc = tile.getContext("2d");
+  tc.fillStyle = ink.dot;
+  tc.beginPath(); tc.arc(size / 2, size / 2, (ink.dotR * dpr) / f, 0, 2 * Math.PI); tc.fill();
+  const dots = ctx.createPattern(tile, "repeat");
+  dots.setTransform(new DOMMatrix([f, 0, 0, f, dpr * (t.x + mx) - step / 2, dpr * (t.y + my) - step / 2]));
+  ctx.fillStyle = dots;
+  ctx.fillRect(0, 0, W, H);
   ctx.setTransform(dpr * t.k, 0, 0, dpr * t.k, dpr * (t.x + mx), dpr * (t.y + my));
   const vx0 = (-mx - t.x) / t.k, vy0 = (-my - t.y) / t.k, vx1 = vx0 + (w + 2 * mx) / t.k, vy1 = vy0 + (h + 2 * my) / t.k;
   ctx.lineJoin = "round";
@@ -46,7 +62,7 @@ onmessage = ({ data: m }) => {
   if (m.ink) ink = m.ink;
   if (!m.job) return;
   const j = m.job, c = new OffscreenCanvas(Math.max(1, Math.round((j.w + 2 * j.mx) * j.dpr)), Math.max(1, Math.round((j.h + 2 * j.my) * j.dpr)));
-  paint(c.getContext("2d"), j, j.far ? lines.card : lines.member, ink, head);
+  paint(c.getContext("2d", { alpha: false }), j, j.far ? lines.card : lines.member, ink, head);
   const bitmap = c.transferToImageBitmap();
   postMessage({ job: j, bitmap }, [bitmap]);
 };`;
@@ -63,12 +79,13 @@ function readInk() {
     color: Object.fromEntries(Object.keys(STATUS).map((st) => [st, token(`color-status-${st}-solid`)])),
     width: num("diagram-edge-width"), strong: num("diagram-edge-width-strong"), headScale: num("diagram-arrow-scale-strong"),
     border: num("border-width"), inferred: dash("diagram-dash-inferred"), data: dash("diagram-dash-data"),
+    bg: token("color-canvas-bg"), dot: token("color-canvas-dot"), dotR: num("diagram-dot"), grid: num("grid-canvas"),
   };
 }
 
 // lines: { member: [...], card: [...] } from toLine(); card lines are drawn in the far view.
 export function createEdgePainter(canvas, lines) {
-  const out = canvas.getContext("bitmaprenderer");
+  const out = canvas.getContext("bitmaprenderer", { alpha: false });
   let worker = null, busy = false, again = false, shown = null, timer = 0, local = null, view = null;
   try {
     if (typeof OffscreenCanvas === "undefined") throw new Error("no OffscreenCanvas");
@@ -110,7 +127,7 @@ export function createEdgePainter(canvas, lines) {
       local ??= { head: new Path2D(HEAD), lines: withPaths(lines) };
       const j = job(), c = document.createElement("canvas");
       c.width = Math.max(1, Math.round((j.w + 2 * j.mx) * j.dpr)); c.height = Math.max(1, Math.round((j.h + 2 * j.my) * j.dpr));
-      paint(c.getContext("2d"), j, j.far ? local.lines.card : local.lines.member, readInk(), local.head);
+      paint(c.getContext("2d", { alpha: false }), j, j.far ? local.lines.card : local.lines.member, readInk(), local.head);
       show(j, await createImageBitmap(c));
     }, L.paintDelay);
   }
