@@ -1,81 +1,79 @@
-# OpenArc
+<p align="center">
+  <img src="docs/logo.svg" width="96" height="96" alt="OpenArc logo">
+</p>
 
-OpenArc turns a code change into an interactive architecture diagram, so reviewers can judge a change by its structure and direction instead of line by line.
+<h1 align="center">OpenArc</h1>
 
-A diff tells you which lines changed. OpenArc tells you:
+<p align="center">
+  <strong>Review a code change by its architecture, not line by line.</strong>
+</p>
 
-- **which components** the change adds, changes or removes, and where they connect to the existing code
-- **how control flows** through them, as named paths you can step through
-- **what each function does**, written in **Klar**, a plain pseudocode that shows intent, mutation and side effects without the noise of the source language
-- **what to think about**: risks and behaviour changes the reviewer should weigh
+<p align="center">
+  <img alt="Version 0.2.0" src="https://img.shields.io/badge/version-0.2.0-4353d6">
+  <a href="LICENSE"><img alt="MIT License" src="https://img.shields.io/badge/license-MIT-blue"></a>
+  <img alt="Node 22.18 or later" src="https://img.shields.io/badge/node-%E2%89%A522.18-339933?logo=node.js&logoColor=white">
+</p>
 
-The raw code is still there for checking the Klar against it, one click away, but it's not the main view.
+---
 
-## What's here
+A diff shows you which lines changed. It doesn't show you what the change does to the shape of the code. OpenArc turns a code change into an interactive architecture diagram, saved as one self-contained HTML page. It shows:
 
-| Path | |
-|---|---|
-| [`spec/klar.md`](spec/klar.md) | **Klar 0.2**: the language for describing code in simpler terms |
-| [`spec/graph.md`](spec/graph.md), [`spec/graph.schema.json`](spec/graph.schema.json) | **OpenArc Graph 0.1**: the JSON format for a change's architecture |
-| [`viewer/`](viewer) | The viewer: pan, zoom, flows, a function inspector. [`index.html`](viewer/index.html) is the page and [`src/`](viewer/src) its modules |
-| [`design/`](design) | The design system: tokens for grid, spacing, type, colour and viewer behaviour, and one file per theme |
-| [`tools/`](tools) | The build, the design checks, and the readers they share (Klar, JSON Schema, config) |
-| [`tests/`](tests) | Tests for the tools, run with Node's built-in runner |
-| [`bench/`](bench) | Synthetic graphs of any size and a script that times the viewer on them |
-| [`vendor/elkjs`](vendor/elkjs) | ELK 0.9.3, the layout engine, pinned (EPL-2.0) |
-| [`bin/openarc.ts`](bin/openarc.ts) | The command line: `new` sets up a change from git, `build` checks it and builds its page |
-| [`skills/openarc`](skills/openarc/SKILL.md) | The skill that drives an agent through a change, shared by the Claude Code and Codex plugins |
-| [`.claude-plugin/`](.claude-plugin), [`plugin.json`](plugin.json), [`.agents/plugins/`](.agents/plugins) | Plugin and marketplace manifests for Claude Code and Codex |
-| [`examples/rate-limit`](examples/rate-limit) | A worked example: adding a token-bucket rate limiter to a small TypeScript API |
+- **Components** the change adds, changes or removes, and where they connect to the existing code
+- **Flows** of control through them, as named paths you can step through
+- **Functions** described in [Klar](spec/klar.md), a plain pseudocode that shows intent, mutation and side effects
+- **Risks** and behaviour changes a reviewer should weigh
 
-## Install the plugin
+The source stays one click away, so you can always check the description against the code.
 
-This repository is its own plugin marketplace for Claude Code and Codex. Both install the same skill, which needs Node 22.18 or later.
+> [!NOTE]
+> OpenArc is in early design. Klar (0.2) and the graph format (0.1) are drafts and will change.
 
-In Claude Code:
+## Install
+
+OpenArc is a plugin for Claude Code and Codex. It needs Node 22.18 or later.
+
+**Claude Code:**
 
 ```
 /plugin install openarc --marketplace hvess/openarc
 ```
 
-In Codex, add the marketplace, then install OpenArc from `/plugins` and start a new session:
+**Codex:** run the command below, then install OpenArc from `/plugins`.
 
 ```bash
 codex plugin marketplace add hvess/openarc
 ```
 
-Then ask for an OpenArc of your branch, or invoke the skill directly (`/openarc:openarc` in Claude Code, `$openarc` in Codex). It writes `.openarc/<name>/index.html` in your repository; `.openarc/` ignores itself in git.
+## Usage
 
-## Try the example
+In any git repository, ask your agent:
+
+> Make an OpenArc for the changes on this branch
+
+You can also invoke the skill directly with `/openarc:openarc` in Claude Code or `$openarc` in Codex. It writes `.openarc/<name>/index.html`, which you can open in a browser or attach to a review. The `.openarc/` folder ignores itself in git.
+
+### Try the example
+
+[`examples/rate-limit`](examples/rate-limit) adds a token-bucket rate limiter to a small TypeScript API. Clone this repository and run:
 
 ```bash
-npm run build
+npm run build && npm run serve
 ```
 
-This writes `examples/rate-limit/graph.json` and `examples/rate-limit/index.html`, a single page with the graph, the viewer and the diagram's layout inlined. Serve the repository and open `examples/rate-limit/` in it:
+Then open <http://localhost:4719/examples/rate-limit/>.
 
-```bash
-npm run serve
-```
+## How it works
 
-OpenArc is written in TypeScript, and Node 22.18 or later runs it as it is: there is no compile step, and nothing to install to build or use it. Node removes the types as it loads each file, and the build does the same for the viewer before inlining it. TypeScript itself is only needed to check the types, so it is the one development dependency (`npm install`, then `npm run typecheck`).
+1. **Collect the change.** OpenArc takes the diff from git, along with the files as they were before it.
+2. **Map the structure.** The agent records the components and functions the change touches, what calls what, and the exact source lines of each.
+3. **Add the meaning.** The agent describes each function in Klar, then adds summaries, flows and review notes.
+4. **Build the page.** OpenArc checks the structure against the code, then builds the viewer into one HTML file.
 
-| Command | |
-|---|---|
-| `npm run build` | Build the example. `node tools/build.ts <dir>` builds any example directory |
-| `npm run check` | Check the design system: the viewer's CSS uses tokens only, and every colour pairing meets WCAG contrast |
-| `npm test` | Run the tests |
-| `npm run typecheck` | Check the types of the tools, the command line, the tests and the viewer |
-| `npm run serve` | Serve the repository on port 4719 (or `$PORT`), with `.ts` files served as JavaScript |
-| `npm run bench` | Generate 25- to 200-component graphs in `bench/out/` for measuring the viewer; [`bench/generate.ts`](bench/generate.ts) says how |
-
-The build fails if the graph doesn't conform to [the spec](spec/graph.md#10-conformance): it validates against the schema, ids are unique, every reference resolves, and every source line range exists.
-
-To work on the viewer without building, run `npm run serve` and open the address it prints, `viewer/index.html?src=../examples/rate-limit/graph.json`. The page loads its modules and stylesheet directly; the server strips the modules' types as it sends them, so a reload picks up every edit.
+Because the build checks the structure, every description points to the code it describes. Any connection the agent couldn't read directly from the code is marked as inferred. The [graph format](spec/graph.md) and [Klar](spec/klar.md) specs have the details.
 
 ## Configuration
 
-OpenArc reads `openarc.config.json` from the directory it builds, or the nearest parent directory that has one. Every setting is optional, and the [schema](spec/config.schema.json) gives editors completion and checking.
+Put an optional `openarc.config.json` next to the change, or in any parent directory:
 
 ```json
 {
@@ -86,25 +84,23 @@ OpenArc reads `openarc.config.json` from the directory it builds, or the nearest
 
 | Setting | Default | |
 |---|---|---|
-| `theme` | `"system"` | `"system"` follows the reader's light or dark setting. `"light"`, `"dark"` or the name of any theme in [`design/themes/`](design/themes) fixes it |
-| `layoutEngine` | `"build"` | `"build"` lays the diagram out when the page is built, so the page carries the layout and opens at once: about 70 ms for the example and 130 ms for 200 components, against 1.5 s when the page lays itself out. `"inline"` and `"cdn"` lay it out each time the page opens instead, with ELK embedded in the page (about 1.6 MB more, 470 kB compressed) or loaded from jsDelivr |
+| `theme` | `"system"` | `"light"`, `"dark"`, `"system"` or any theme in [`design/themes/`](design/themes) |
+| `layoutEngine` | `"build"` | `"build"` lays the diagram out ahead of time, so the page opens at once. `"inline"` or `"cdn"` lay it out in the browser |
 
-Unknown settings and values stop the build, so a typo never goes unnoticed.
+## Contributing
 
-## How it fits together
+Issues and pull requests are welcome. Because the formats are still drafts, it's best to open an issue before changing [Klar](spec/klar.md) or the [graph format](spec/graph.md).
 
-```
-code diff ──▶ structure ──────────▶ graph.json ──▶ viewer
-               (components, edges,      ▲
-                source lines)           │
-                                   meaning
-                         (Klar, summaries, flows, notes)
-```
+OpenArc is written in TypeScript, and there's no compile step: Node runs it directly.
 
-**Structure** is mechanical and checkable: what was added, what calls what, and which lines each piece comes from. **Meaning** is written by an agent (Claude Code, Codex and others) and kept honest by the structure. Every function in the graph points to the source lines its Klar describes, and every edge that wasn't resolved from the code is marked as inferred.
+| Command | |
+|---|---|
+| `npm test` | Run the tests |
+| `npm run check` | Check the design tokens and colour contrast |
+| `npm run typecheck` | Check types (run `npm install` first) |
+| `npm run build` | Build the example |
+| `npm run serve` | Serve the repository on port 4719 |
 
-In this first milestone the example is written by hand to pin down the formats. Extraction and the agent plugin come next.
+## License
 
-## Status
-
-Early design. Klar is at 0.2 and the graph format at 0.1; both are drafts and will change.
+[MIT](LICENSE). The bundled [ELK](vendor/elkjs/LICENSE.md) layout engine is under EPL-2.0.

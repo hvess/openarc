@@ -3,6 +3,7 @@
   "version": "0.2.0",
   "description": "Turns a code change into an interactive architecture diagram for review.",
   "author": { "name": "Maximilian Hvesser-Lewis" },
+  "license": "MIT",
   "homepage": "https://github.com/hvess/openarc",
   "repository": "https://github.com/hvess/openarc",
   "keywords": ["architecture", "diagram", "code review", "diff"]

@@ -2,6 +2,7 @@
   "name": "openarc",
   "version": "0.2.0",
   "private": true,
+  "license": "MIT",
   "description": "Turns a code change into an interactive architecture diagram.",
   "type": "module",
   "engines": {
