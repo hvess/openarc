@@ -74,7 +74,7 @@ A component's status summarises its members. A component is `changed` if it is n
 |---|---|---|
 | `id` | yes | Unique id |
 | `name` | yes | Display name |
-| `kind` | yes | `function`, `const`, `state` or `type` |
+| `kind` | yes | `function`, `const`, `state`, `type`, or `section` for a part of a prose file, named by its heading ([Klar § 5](klar.md#5-components)) |
 | `status` | yes | § 3 |
 | `signature` | no | Inputs and result as in a [Klar signature](klar.md#6-signatures), such as `(client, plan) → allowed | denied` |
 | `visibility` | no | `public` (default) or `private` |

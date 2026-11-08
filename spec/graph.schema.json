@@ -66,7 +66,7 @@
       "properties": {
         "id": { "type": "string", "minLength": 1 },
         "name": { "type": "string", "minLength": 1 },
-        "kind": { "enum": ["function", "const", "state", "type"] },
+        "kind": { "enum": ["function", "const", "state", "type", "section"] },
         "status": { "$ref": "#/$defs/status" },
         "signature": { "type": "string" },
         "visibility": { "enum": ["public", "private"] },

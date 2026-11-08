@@ -7402,7 +7402,7 @@ const __cards_js = (() => {
 const { esc, token, num, L } = __util_js;
 const { STATUS, statusOf } = __model_js;
 
-const MEMBER_KIND = { function: "fn", const: "const", state: "state", type: "type" };
+const MEMBER_KIND = { function: "fn", const: "const", state: "state", type: "type", section: "§" };
 const memberKind = (kind) => MEMBER_KIND[kind] ?? esc(kind);
 
 // `(client: string, plan = "free") -> Decision` reads as `(client, plan) → Decision`.
@@ -7989,7 +7989,7 @@ const __klar_vocab_js = (() => {
 
 // § 13. Longer phrases come first so "Wait for all" wins over "Wait for".
 const CONTROL = ["Wait for all", "Wait for", "For each", "Repeat up to", "Depending on", "Else if", "If", "Else", "When", "While", "Return", "Fail", "Skip", "Stop"];
-const DECLARATIONS = ["class", "module", "interface", "record", "enum", "external", "file", "needs", "state", "const", "private", "klar", "change"];
+const DECLARATIONS = ["class", "module", "interface", "record", "enum", "external", "file", "needs", "state", "const", "section", "private", "klar", "change"];
 // § 5.
 const COMPONENT_KINDS = ["class", "module", "interface", "record", "enum", "external", "file"];
 // § 7.1.
@@ -8001,7 +8001,9 @@ const EFFECTS = ["no effects", "changes", "reads", "writes", "sends", "fails", "
 // that isn't code, named by its quoted path. The name is group 2 or, quoted, group 3.
 const COMPONENT_LINE = new RegExp(`^(${COMPONENT_KINDS.join("|")})\\s+(?:([\\w.]+)|"([^"]+)")`);
 // A member at level 2: `check(…)`, `private bucketFor(…)`, `state buckets = …`, `const LIMIT = …`.
-const MEMBER_LINE = /^(?:private\s+)?(?:(const|state)\s+)?([A-Za-z_][\w.]*)/;
+// `section "Install on Linux"` names a part of a prose file by its heading, quoted. The name is
+// group 2 or, quoted, group 3.
+const MEMBER_LINE = /^(?:private\s+)?(?:(const|state|section)\s+)?(?:([A-Za-z_][\w.]*)|"([^"]+)")/;
 
 return { CONTROL, DECLARATIONS, COMPONENT_KINDS, VERBS, EFFECTS, COMPONENT_LINE, MEMBER_LINE };
 })();
@@ -8130,6 +8132,9 @@ const RESOLUTION = {
   dispatch: () => "Called through an interface or function value",
 };
 
+// A member is named after its component as in code, Card.member, except a section of a prose
+// file, which reads README.md › Install.
+const joiner = (m) => (m.kind === "section" ? " › " : ".");
 const section = (title, body) => `<section><h3 class="type-overline">${title}</h3>${body}</section>`;
 const pill = (status) => `<span class="pill type-overline s-${esc(status)}">${esc(statusOf(status).label)}</span>`;
 const tag = (text) => `<span class="tag type-code-meta">${esc(text)}</span>`;
@@ -8139,7 +8144,7 @@ function createInspector(drawer, app, { G, members, compOf, outE, inE }, klarHTM
     if (!list.length) return "";
     return `<ul class="links">${list.map((e) => {
       const id = dir === "out" ? e.to : e.from, c = compOf(id), m = members.get(id);
-      const name = m ? `<span class="cn">${esc(c.name)}.</span>${esc(m.name)}` : esc(c.name);
+      const name = m ? `<span class="cn">${esc(c.name)}${joiner(m)}</span>${esc(m.name)}` : esc(c.name);
       const status = e.status === "context" ? (m || c).status : e.status;
       const res = RESOLUTION[e.resolution];
       const badge = res ? `<span class="inf type-label" title="${esc(res(e))}">${esc(e.resolution)}</span>` : "";
@@ -8185,7 +8190,7 @@ function createInspector(drawer, app, { G, members, compOf, outE, inE }, klarHTM
   function memberBody(m, c) {
     const uses = outE.get(m.id) || [], usedBy = inE.get(m.id) || [];
     return `
-      <h2 class="type-title-code"><span class="cn">${esc(c.name)}.</span>${esc(m.name)}</h2>
+      <h2 class="type-title-code"><span class="cn">${esc(c.name)}${joiner(m)}</span>${esc(m.name)}</h2>
       <div class="badges">${pill(m.status)}${tag(m.kind)}${m.visibility === "private" ? tag("private") : ""}</div>
       ${m.summary ? `<p class="lead type-lead">${esc(m.summary)}</p>` : ""}
       ${m.klar ? section("Klar", `<pre class="klar type-code">${klarHTML(m.klar, m.id)}</pre>`) : ""}

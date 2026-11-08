@@ -13,6 +13,9 @@ const RESOLUTION = {
   dispatch: () => "Called through an interface or function value",
 };
 
+// A member is named after its component as in code, Card.member, except a section of a prose
+// file, which reads README.md › Install.
+const joiner = (m) => (m.kind === "section" ? " › " : ".");
 const section = (title, body) => `<section><h3 class="type-overline">${title}</h3>${body}</section>`;
 const pill = (status) => `<span class="pill type-overline s-${esc(status)}">${esc(statusOf(status).label)}</span>`;
 const tag = (text) => `<span class="tag type-code-meta">${esc(text)}</span>`;
@@ -22,7 +25,7 @@ export function createInspector(drawer, app, { G, members, compOf, outE, inE }, 
     if (!list.length) return "";
     return `<ul class="links">${list.map((e) => {
       const id = dir === "out" ? e.to : e.from, c = compOf(id), m = members.get(id);
-      const name = m ? `<span class="cn">${esc(c.name)}.</span>${esc(m.name)}` : esc(c.name);
+      const name = m ? `<span class="cn">${esc(c.name)}${joiner(m)}</span>${esc(m.name)}` : esc(c.name);
       const status = e.status === "context" ? (m || c).status : e.status;
       const res = RESOLUTION[e.resolution];
       const badge = res ? `<span class="inf type-label" title="${esc(res(e))}">${esc(e.resolution)}</span>` : "";
@@ -68,7 +71,7 @@ export function createInspector(drawer, app, { G, members, compOf, outE, inE }, 
   function memberBody(m, c) {
     const uses = outE.get(m.id) || [], usedBy = inE.get(m.id) || [];
     return `
-      <h2 class="type-title-code"><span class="cn">${esc(c.name)}.</span>${esc(m.name)}</h2>
+      <h2 class="type-title-code"><span class="cn">${esc(c.name)}${joiner(m)}</span>${esc(m.name)}</h2>
       <div class="badges">${pill(m.status)}${tag(m.kind)}${m.visibility === "private" ? tag("private") : ""}</div>
       ${m.summary ? `<p class="lead type-lead">${esc(m.summary)}</p>` : ""}
       ${m.klar ? section("Klar", `<pre class="klar type-code">${klarHTML(m.klar, m.id)}</pre>`) : ""}

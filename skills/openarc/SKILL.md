@@ -26,7 +26,11 @@ The OpenArc CLI is `bin/openarc.mjs`, two folders up from the folder this file i
    - A range covers that member and nothing else. For a setting in a config file, that's its own lines, not the neighbouring settings.
    - Leave out `code`; the build copies it from the files.
 
-   Files that aren't code, such as configuration, manifests, stylesheets or written instructions, are components of kind `file`. Name them by their path (`"name": ".claude-plugin/plugin.json"`), and give them `const` members for the settings or sections that matter.
+   Files that aren't code are components of kind `file`, named by their path (`"name": ".claude-plugin/plugin.json"`):
+   - **Configuration** (JSON, TOML, YAML, manifests, stylesheets) gets a `const` member for each setting that matters, named by its key.
+   - **Prose** (Markdown, plain text, docs, ADRs, written instructions) gets a `section` member for each section the change touches or relies on, named by its heading exactly as written (`"name": "Install on Linux"`), never an invented identifier. A part with no heading of its own, such as a list item or a numbered decision, is named by the label it starts with (`"5. Releases stay in this private repository"`). The range covers the part's own lines: a heading and its text up to the next heading of the same or a higher level, or the whole list item.
+
+   Edges between prose sections are `inferred` unless one actually links to the other, and their `label` says what the reference is ("points readers to LICENSE").
 
    Write edges between members, and mark every edge you didn't read directly from a call or import as `dispatch` or `inferred`.
 
@@ -34,7 +38,7 @@ The OpenArc CLI is `bin/openarc.mjs`, two folders up from the folder this file i
 
    Add notes for the risks and behaviour changes a reviewer should weigh.
 
-6. **Write the meaning in `change.klar`.** Write a Klar block for every added, changed and removed member, following the Klar spec: one action per line, names from the code, effects stated. A `file` component's header is `file "<path>"`, with its quoted path. Each added or changed member needs a one-line `summary` in `graph.src.json`. A component's summary can come from its Klar doc line instead.
+6. **Write the meaning in `change.klar`.** Write a Klar block for every added, changed and removed member, following the Klar spec: one action per line, names from the code, effects stated. A `file` component's header is `file "<path>"`, with its quoted path. A prose section is `section "<heading>"`, and its body says what the section says, one point per line in the file's own words, with `+` and `-` for what the change adds and removes; it has no verbs or effects footer. Each added or changed member needs a one-line `summary` in `graph.src.json`. A component's summary can come from its Klar doc line instead.
 
 7. **Build until it passes.** Run `openarc build .openarc/<name>`. It lists every problem (schema errors, unknown ids, line ranges outside a file, missing Klar). Fix each one and run it again. Don't loosen the graph to get past a check, for example by deleting a member whose lines you couldn't place; find the right lines instead.
 

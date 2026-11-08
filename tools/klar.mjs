@@ -25,8 +25,8 @@ export function parseKlar(text) {
       const m = content.match(MEMBER_LINE);
       if (!m) { member = null; continue; }
       if (m[1] === "state") comp.header.push(raw);
-      member = { name: m[2], lines: [dedent(raw)] };
-      comp.members.set(m[2], member);
+      member = { name: m[2] ?? m[3], lines: [dedent(raw)] };
+      comp.members.set(member.name, member);
       continue;
     }
     if (member) member.lines.push(dedent(raw));

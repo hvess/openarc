@@ -3,7 +3,7 @@
 
 // § 13. Longer phrases come first so "Wait for all" wins over "Wait for".
 export const CONTROL = ["Wait for all", "Wait for", "For each", "Repeat up to", "Depending on", "Else if", "If", "Else", "When", "While", "Return", "Fail", "Skip", "Stop"];
-export const DECLARATIONS = ["class", "module", "interface", "record", "enum", "external", "file", "needs", "state", "const", "private", "klar", "change"];
+export const DECLARATIONS = ["class", "module", "interface", "record", "enum", "external", "file", "needs", "state", "const", "section", "private", "klar", "change"];
 // § 5.
 export const COMPONENT_KINDS = ["class", "module", "interface", "record", "enum", "external", "file"];
 // § 7.1.
@@ -15,4 +15,6 @@ export const EFFECTS = ["no effects", "changes", "reads", "writes", "sends", "fa
 // that isn't code, named by its quoted path. The name is group 2 or, quoted, group 3.
 export const COMPONENT_LINE = new RegExp(`^(${COMPONENT_KINDS.join("|")})\\s+(?:([\\w.]+)|"([^"]+)")`);
 // A member at level 2: `check(…)`, `private bucketFor(…)`, `state buckets = …`, `const LIMIT = …`.
-export const MEMBER_LINE = /^(?:private\s+)?(?:(const|state)\s+)?([A-Za-z_][\w.]*)/;
+// `section "Install on Linux"` names a part of a prose file by its heading, quoted. The name is
+// group 2 or, quoted, group 3.
+export const MEMBER_LINE = /^(?:private\s+)?(?:(const|state|section)\s+)?(?:([A-Za-z_][\w.]*)|"([^"]+)")/;

@@ -107,6 +107,19 @@ A `file` is named by its path from the repository root, in quotes, because paths
     const version = "0.1.0", kept equal to package.json
 ```
 
+A file of prose, such as Markdown or plain text, has sections instead. A `section` is named by its heading, quoted, exactly as the file has it. A part with no heading of its own, such as a list item or a numbered decision, is named by the label it starts with: `section "0009 — Releases for Linux and Apple Silicon"`. Its body says what the section says, one point per line, in the file's own words where it can. A changed section marks the points it gains and loses with the gutter, as a function marks its steps (§ 3):
+
+```klar
+~ file "README.md"
+~   section "Install"
+-     no build for Windows
++     no build for Linux or Windows
+-   section "Install on Linux"
+-     AppImage (needs FUSE 2) or .deb, when a release lists Linux files
+```
+
+A section's body isn't steps, so the verbs and control words of § 7 and § 8 don't apply, and it has no effects footer.
+
 Inside a component, before its functions:
 
 ```klar
@@ -323,7 +336,7 @@ Renderers and editors colour Klar with these token classes:
 | Class | Covers |
 |---|---|
 | control | `If`, `Else`, `Else if`, `Depending on`, `When`, `For each`, `While`, `Repeat up to`, `Skip`, `Stop`, `Wait for`, `Wait for all`, `Return`, `Fail` |
-| declaration | `class`, `module`, `interface`, `record`, `enum`, `external`, `file`, `needs`, `state`, `const`, `private`, `klar`, `change` |
+| declaration | `class`, `module`, `interface`, `record`, `enum`, `external`, `file`, `needs`, `state`, `const`, `section`, `private`, `klar`, `change` |
 | name | names from the code: components, members, inputs and bound names |
 | call | a call that the graph connects to a function (§ 7.2) |
 | verb | the verbs of § 7.1 at the start of a step |
@@ -361,11 +374,12 @@ version     = gutter , "klar 0.2" , NL ;
 change      = gutter , "change" , SP , text , NL ;
 
 component   = gutter , INDENT(0) , ( kind , SP , Name | "file" , SP , '"' , path , '"' ) , NL ,
-              { needs | state | const | function } ;
+              { needs | state | const | section | function } ;
 kind        = "class" | "interface" | "module" | "record" | "enum" | "external" ;
 needs       = gutter , INDENT(2) , "needs" , SP , names , NL ;
 state       = gutter , INDENT(2) , "state" , SP , name , " = " , phrase , NL ;
 const       = gutter , INDENT(2) , "const" , SP , NAME , [ " = " , phrase ] , NL , { detail } ;
+section     = gutter , INDENT(2) , "section" , SP , '"' , heading , '"' , NL , { gutter , INDENT(4) , text , NL } ;
 
 function    = gutter , INDENT(2) , signature , ( SP , "…" , NL | NL , body ) ;
 signature   = [ "private" , SP ] , name , "(" , [ inputs ] , ")" , [ SP , "→" , SP , result ] ;

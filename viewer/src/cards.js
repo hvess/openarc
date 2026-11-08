@@ -3,7 +3,7 @@
 import { esc, token, num, L } from "./util.js";
 import { STATUS, statusOf } from "./model.js";
 
-const MEMBER_KIND = { function: "fn", const: "const", state: "state", type: "type" };
+const MEMBER_KIND = { function: "fn", const: "const", state: "state", type: "type", section: "§" };
 export const memberKind = (kind) => MEMBER_KIND[kind] ?? esc(kind);
 
 // `(client: string, plan = "free") -> Decision` reads as `(client, plan) → Decision`.

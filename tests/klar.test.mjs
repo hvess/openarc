@@ -41,3 +41,9 @@ test("parseKlar names a file component by its quoted path", () => {
   assert.deepEqual([...klar.keys()], [".claude-plugin/plugin.json", "m"]);
   assert.deepEqual([...klar.get(".claude-plugin/plugin.json").members.keys()], ["version"]);
 });
+
+test("parseKlar names a prose section by its quoted heading", () => {
+  const klar = parseKlar(["~ file \"README.md\"", "~   section \"Install on Linux\"", "-     AppImage or .deb", "+     build from source", "    section \"Licence\"", "      MIT"].join("\n"));
+  assert.deepEqual([...klar.get("README.md").members.keys()], ["Install on Linux", "Licence"]);
+  assert.deepEqual(klar.get("README.md").members.get("Install on Linux").lines, ["~ section \"Install on Linux\"", "-   AppImage or .deb", "+   build from source"]);
+});
