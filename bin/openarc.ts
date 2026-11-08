@@ -178,11 +178,11 @@ Then run: openarc build ${rel}`);
   printDocs();
 }
 
-function cmdBuild(args: string[]): void {
+async function cmdBuild(args: string[]): Promise<void> {
   const dir = args[0];
   if (!dir) die(USAGE);
   if (!existsSync(join(dir, "graph.src.json"))) die(`${dir} has no graph.src.json; set one up with openarc new <name>`);
-  const result = buildChange(resolve(dir));
+  const result = await buildChange(resolve(dir));
   if (result.problems.length) {
     console.error(`${result.problems.length} problem${result.problems.length === 1 ? "" : "s"}:\n${report(result)}`);
     process.exit(1);
@@ -198,7 +198,7 @@ function printDocs(): void {
 const [command, ...args] = process.argv.slice(2);
 switch (command) {
   case "new": cmdNew(args); break;
-  case "build": cmdBuild(args); break;
+  case "build": await cmdBuild(args); break;
   case "docs": printDocs(); break;
   case undefined: case "help": case "--help": case "-h": console.log(USAGE); break;
   default: die(`unknown command ${command}\n\n${USAGE}`);

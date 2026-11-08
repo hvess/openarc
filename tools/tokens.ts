@@ -29,6 +29,8 @@ export interface BuiltTokens {
   themes: string[];
   // theme name → token path → resolved colour
   colors: Record<string, Map<string, string>>;
+  // Every custom property in :root outside the themes, by name without "--", as the page sees it.
+  values: Map<string, string>;
   statuses: string[];
 }
 
@@ -103,7 +105,9 @@ export function buildTokens(): BuiltTokens {
     return [t.name, new Map([...t.tokens].filter(([, tok]) => tok.type === "color").map(([p, tok]) => [p, String(resolve(tok.value, scope))]))];
   }));
 
-  return { css: out.join("\n\n") + "\n", themes: themes.map((t) => t.name), colors, statuses };
+  const values = new Map(base.map((d) => d.match(/^--([\w-]+): (.*);$/)).filter((m) => m !== null).map((m) => [m[1], m[2]]));
+
+  return { css: out.join("\n\n") + "\n", themes: themes.map((t) => t.name), colors, statuses, values };
 }
 
 // ---------------------------------------------------------------------------

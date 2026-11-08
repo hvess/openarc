@@ -2,7 +2,8 @@
 // is coalesced into one write per frame. The stage's box is cached and only read again when it
 // resizes, so a frame never forces the browser to recalculate layout.
 
-import { L, narrow, closest, type Box } from "./util.ts";
+import { L, narrow, closest } from "./util.ts";
+import type { Box } from "./place.ts";
 import type { Painter } from "./painter.ts";
 
 export interface ViewParts {

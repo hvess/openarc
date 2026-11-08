@@ -12,7 +12,7 @@ import { validate, type Schema } from "./schema.ts";
 
 export interface Config {
   theme: string;
-  layoutEngine: "inline" | "cdn";
+  layoutEngine: "build" | "inline" | "cdn";
 }
 
 const root = dirname(dirname(fileURLToPath(import.meta.url)));

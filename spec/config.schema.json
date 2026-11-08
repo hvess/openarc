@@ -13,9 +13,9 @@
       "examples": ["system", "light", "dark"]
     },
     "layoutEngine": {
-      "description": "Where a built page gets ELK, the engine that lays out the diagram. \"inline\" embeds it, so the page is one file that works offline (about 1.6 MB, 470 kB compressed). \"cdn\" loads it from jsDelivr when the page opens.",
-      "enum": ["inline", "cdn"],
-      "default": "inline"
+      "description": "When the diagram is laid out. \"build\" lays it out when the page is built, so the page carries the layout and not the engine: it opens fastest and stays small. \"inline\" and \"cdn\" lay it out each time the page opens, with ELK embedded in the page (about 1.6 MB more, 470 kB compressed) or loaded from jsDelivr.",
+      "enum": ["build", "inline", "cdn"],
+      "default": "build"
     }
   },
   "additionalProperties": false

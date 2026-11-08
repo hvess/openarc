@@ -107,7 +107,7 @@ for (const n of sizes) {
   const problems = checkGraph(graph);
   if (problems.length) throw new Error(`generated graph n${n} does not conform:\n${problems.slice(0, 10).join("\n")}`);
   writeFileSync(join(out, `n${n}.json`), JSON.stringify(graph));
-  writeFileSync(join(out, `n${n}.html`), buildPage(graph, here).html);
+  writeFileSync(join(out, `n${n}.html`), (await buildPage(graph, here)).html);
   const members = graph.components.reduce((s, c) => s + c.members.length, 0);
   console.log(`✓ bench/out/n${n}.html (${n} components, ${members} members, ${graph.edges.length} edges)`);
 }

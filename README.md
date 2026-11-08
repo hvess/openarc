@@ -52,7 +52,7 @@ Then ask for an OpenArc of your branch, or invoke the skill directly (`/openarc:
 npm run build
 ```
 
-This writes `examples/rate-limit/graph.json` and `examples/rate-limit/index.html`, a single page with the graph, the viewer and its layout engine inlined. Serve the repository and open `examples/rate-limit/` in it:
+This writes `examples/rate-limit/graph.json` and `examples/rate-limit/index.html`, a single page with the graph, the viewer and the diagram's layout inlined. Serve the repository and open `examples/rate-limit/` in it:
 
 ```bash
 npm run serve
@@ -87,7 +87,7 @@ OpenArc reads `openarc.config.json` from the directory it builds, or the nearest
 | Setting | Default | |
 |---|---|---|
 | `theme` | `"system"` | `"system"` follows the reader's light or dark setting. `"light"`, `"dark"` or the name of any theme in [`design/themes/`](design/themes) fixes it |
-| `layoutEngine` | `"inline"` | `"inline"` embeds the layout engine, so a built page is one file that needs no CDN (about 1.6 MB, 470 kB compressed). `"cdn"` loads it from jsDelivr when the page opens |
+| `layoutEngine` | `"build"` | `"build"` lays the diagram out when the page is built, so the page carries the layout and opens at once: about 70 ms for the example and 130 ms for 200 components, against 1.5 s when the page lays itself out. `"inline"` and `"cdn"` lay it out each time the page opens instead, with ELK embedded in the page (about 1.6 MB more, 470 kB compressed) or loaded from jsDelivr |
 
 Unknown settings and values stop the build, so a typo never goes unnoticed.
 

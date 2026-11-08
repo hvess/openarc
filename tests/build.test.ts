@@ -6,6 +6,8 @@ import { tmpdir } from "node:os";
 import { bundle, checkSyntax } from "../tools/bundle.ts";
 import { buildTokens } from "../tools/tokens.ts";
 import { buildPage } from "../tools/page.ts";
+import { placeCards } from "../viewer/src/place.ts";
+import type { Graph } from "../viewer/src/graph.ts";
 
 const viewer = new URL("../viewer/src/main.ts", import.meta.url).pathname;
 
@@ -62,9 +64,42 @@ test("tokens: one class per status, no unused or repeated declarations", () => {
   assert.match(css, /@media \(prefers-color-scheme: dark\) \{\n  :root:not\(\[data-theme\]\)/);
 });
 
-test("a built page has every external part inlined", () => {
-  const graph = JSON.parse(readFileSync(new URL("../examples/rate-limit/graph.json", import.meta.url), "utf8"));
-  const { html } = buildPage(graph, new URL("..", import.meta.url).pathname);
+const example = (): Graph => JSON.parse(readFileSync(new URL("../examples/rate-limit/graph.json", import.meta.url), "utf8"));
+function withLayoutEngine<T>(layoutEngine: string, fn: (dir: string) => Promise<T>): Promise<T> {
+  const dir = mkdtempSync(join(tmpdir(), "openarc-"));
+  writeFileSync(join(dir, "openarc.config.json"), JSON.stringify({ layoutEngine }));
+  return fn(dir).finally(() => rmSync(dir, { recursive: true, force: true }));
+}
+
+test("a built page carries its layout and no layout engine", async () => {
+  const graph = example();
+  const { html } = await buildPage(graph, new URL("..", import.meta.url).pathname);
   assert.doesNotMatch(html, /src="\.\.\/|href="tokens\.css"|data-src=|src="src\//);
-  assert.match(html, /<script id="openarc-elk" type="text\/plain">\S/);
+  assert.match(html, /<script id="openarc-elk" type="text\/plain"><\/script>/);
+  assert.ok(html.length < 300_000, `${html.length} bytes`);
+  const laid = JSON.parse(html.match(/<script id="openarc-layout" type="application\/json">(.*?)<\/script>/)![1]);
+  assert.deepEqual(laid.children.map((n: { id: string }) => n.id.slice(2)).sort(), graph.components.map((c) => c.id).sort());
+  for (const n of laid.children) assert.ok(n.width > 0 && n.height > 0 && n.x >= 0 && n.y >= 0, JSON.stringify(n));
+});
+
+test("with layoutEngine inline, a built page embeds ELK and no layout", async () => {
+  await withLayoutEngine("inline", async (dir) => {
+    const { html } = await buildPage(example(), dir);
+    assert.doesNotMatch(html, /src="\.\.\/|href="tokens\.css"|data-src=|src="src\//);
+    assert.match(html, /<script id="openarc-elk" type="text\/plain">\S/);
+    assert.match(html, /<script id="openarc-layout" type="application\/json"><\/script>/);
+  });
+});
+
+test("placeCards fits each column to its widest card and shifts the columns after it", () => {
+  // Two layers as ELK laid them out at 100 wide, 50 apart; the cards turn out 140 and 80 wide.
+  const laid = { width: 300, height: 200, children: [
+    { id: "c:a", x: 0, y: 0, width: 100, height: 40 }, { id: "c:b", x: 0, y: 80, width: 100, height: 40 },
+    { id: "c:c", x: 150, y: 0, width: 100, height: 40 },
+  ] };
+  const { pos, width } = placeCards(laid, [{ id: "a", w: 140, h: 40 }, { id: "b", w: 80, h: 40 }, { id: "c", w: 80, h: 40 }], 1);
+  assert.deepEqual(pos.get("a"), { x: 0, y: 0, w: 140, h: 40 });
+  assert.deepEqual(pos.get("b"), { x: 0, y: 80, w: 140, h: 40 });
+  assert.deepEqual(pos.get("c"), { x: 190, y: 0, w: 80, h: 40 });
+  assert.equal(width, 300 + 40 - 20);
 });

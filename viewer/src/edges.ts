@@ -1,7 +1,8 @@
 // Where each edge runs. Every edge leaves and enters a card horizontally. The line stops at the
 // arrowhead's notch, and the head is its own shape so it can grow with the line when emphasised.
 
-import { esc, num, L, type Box } from "./util.ts";
+import { esc, num, L } from "./util.ts";
+import type { Box } from "./place.ts";
 import type { Model } from "./model.ts";
 import type { Edge } from "./graph.ts";
 

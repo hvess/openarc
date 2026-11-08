@@ -25,13 +25,13 @@ export type BuildResult =
   | { problems: []; graphFile: string; pageFile: string; config: Config; configFile: string | null };
 
 // Returns { problems } when the change doesn't build, otherwise the files written.
-export function buildChange(dir: string): BuildResult {
+export async function buildChange(dir: string): Promise<BuildResult> {
   const { graph, problems } = assembleGraph(dir);
   if (problems.length) return { problems };
 
-  let page: ReturnType<typeof buildPage>;
+  let page: Awaited<ReturnType<typeof buildPage>>;
   try {
-    page = buildPage(graph, dir);
+    page = await buildPage(graph, dir);
   } catch (err) {
     return { problems: [(err as Error).message] };
   }
@@ -58,7 +58,7 @@ if (isMain(import.meta.url)) {
   const root = dirname(dirname(fileURLToPath(import.meta.url)));
   writeFileSync(join(root, "viewer/tokens.css"), buildTokens().css);
 
-  const result = buildChange(dir);
+  const result = await buildChange(dir);
   if (result.problems.length) {
     console.error(report(result));
     process.exit(1);
