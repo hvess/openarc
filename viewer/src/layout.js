@@ -13,6 +13,10 @@ const OPTIONS = {
   "elk.layered.spacing.edgeNodeBetweenLayers": String(L.nodeGap), "elk.spacing.componentComponent": String(L.layerGap),
   "elk.padding": `[top=${L.margin},left=${L.margin},bottom=${L.margin},right=${L.margin}]`,
   "elk.layered.nodePlacement.strategy": "BRANDES_KOEPF",
+  // Lay disconnected parts (code and the docs it mentions, say) out on shared layers. Packed
+  // separately, their layers don't line up, and the column pass below would merge cards from
+  // different layers into one column, on top of each other.
+  "elk.separateConnectedComponents": "false",
   // The viewer draws its own edges, so ELK only needs a cheap routing to space layers by.
   "elk.edgeRouting": "POLYLINE",
 };
