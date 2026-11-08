@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>OpenArc</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='%234353d6' stroke-linecap='round'%3E%3Cstyle%3E@media (prefers-color-scheme:dark)%7Bsvg%7Bstroke:%238e99ff%7D%7D%3C/style%3E%3Cpath d='M13.2 8.74A5.25 5.25 0 1 1 9.36 2.93' stroke-width='1.75'/%3E%3Ccircle cx='13.07' cy='6.64' r='1.75' stroke-width='1.4'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
@@ -760,7 +761,8 @@ const { esc } = __util_ts;
 const { STATUS, STATUSES } = __model_ts;
                                          
 
-const LOGO = `<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"><path d="M2.5 12.5a5.5 5.5 0 0 1 11 0"/><circle cx="2.5" cy="12.5" r="1.25" fill="currentColor" stroke="none"/><circle cx="13.5" cy="12.5" r="1.25" fill="currentColor" stroke="none"/></svg>`;
+// An O that stops short on a hollow node. The ring has no fill, so the mark works on any background.
+const LOGO = `<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-linecap="round" aria-hidden="true"><path d="M13.2 8.74A5.25 5.25 0 1 1 9.36 2.93" stroke-width="1.75"/><circle cx="13.07" cy="6.64" r="1.75" stroke-width="1.4"/></svg>`;
 const LEGEND                                     = [
   ["added", "Added", "", "Calls"],
   ["changed", "Changed", "ln-inferred", "Inferred"],

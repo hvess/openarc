@@ -4,7 +4,8 @@ import { esc } from "./util.ts";
 import { STATUS, STATUSES, type Model } from "./model.ts";
 import type { Status } from "./graph.ts";
 
-const LOGO = `<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"><path d="M2.5 12.5a5.5 5.5 0 0 1 11 0"/><circle cx="2.5" cy="12.5" r="1.25" fill="currentColor" stroke="none"/><circle cx="13.5" cy="12.5" r="1.25" fill="currentColor" stroke="none"/></svg>`;
+// An O that stops short on a hollow node. The ring has no fill, so the mark works on any background.
+const LOGO = `<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-linecap="round" aria-hidden="true"><path d="M13.2 8.74A5.25 5.25 0 1 1 9.36 2.93" stroke-width="1.75"/><circle cx="13.07" cy="6.64" r="1.75" stroke-width="1.4"/></svg>`;
 const LEGEND: [Status, string, string, string][] = [
   ["added", "Added", "", "Calls"],
   ["changed", "Changed", "ln-inferred", "Inferred"],
