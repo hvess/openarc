@@ -4,7 +4,7 @@
 // the bundled viewer modules, the graph, and the ELK layout engine (or a link to it on a CDN,
 // when openarc.config.json says "layoutEngine": "cdn").
 
-import { readFileSync, writeFileSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { buildTokens } from "./tokens.mjs";
@@ -17,8 +17,6 @@ const ELK = join(root, "vendor/elkjs");
 // configDir is where the search for openarc.config.json starts.
 export function buildPage(graph, configDir) {
   const { css, themes } = buildTokens();
-  // Keep the unbuilt viewer's stylesheet in step with design/, too.
-  writeFileSync(join(root, "viewer/tokens.css"), css);
   const { config, file: configFile } = loadConfig(configDir, { themes });
 
   const script = bundle(join(root, "viewer/src/main.js"));

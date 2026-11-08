@@ -1,0 +1,9 @@
+{
+  "name": "openarc",
+  "version": "0.1.0",
+  "description": "Turns a code change into an interactive architecture diagram for review.",
+  "author": { "name": "Maximilian Hvesser-Lewis" },
+  "homepage": "https://github.com/hvess/openarc",
+  "repository": "https://github.com/hvess/openarc",
+  "keywords": ["architecture", "diagram", "code review", "diff"]
+}

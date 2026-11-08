@@ -1,9 +1,15 @@
 {
   "name": "openarc",
+  "version": "0.1.0",
   "private": true,
   "description": "Turns a code change into an interactive architecture diagram.",
   "type": "module",
-  "engines": { "node": ">=20" },
+  "engines": {
+    "node": ">=20"
+  },
+  "bin": {
+    "openarc": "bin/openarc.mjs"
+  },
   "scripts": {
     "build": "node tools/build.mjs examples/rate-limit",
     "check": "node tools/check.mjs",

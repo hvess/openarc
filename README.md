@@ -23,7 +23,28 @@ The raw code is still there for checking the Klar against it, one click away, bu
 | [`tests/`](tests) | Tests for the tools, run with Node's built-in runner |
 | [`bench/`](bench) | Synthetic graphs of any size and a script that times the viewer on them |
 | [`vendor/elkjs`](vendor/elkjs) | ELK 0.9.3, the layout engine, pinned (EPL-2.0) |
+| [`bin/openarc.mjs`](bin/openarc.mjs) | The command line: `new` sets up a change from git, `build` checks it and builds its page |
+| [`skills/openarc`](skills/openarc/SKILL.md) | The skill that drives an agent through a change, shared by the Claude Code and Codex plugins |
+| [`.claude-plugin/`](.claude-plugin), [`plugin.json`](plugin.json), [`.agents/plugins/`](.agents/plugins) | Plugin and marketplace manifests for Claude Code and Codex |
 | [`examples/rate-limit`](examples/rate-limit) | A worked example: adding a token-bucket rate limiter to a small TypeScript API |
+
+## Install the plugin
+
+This repository is its own plugin marketplace for Claude Code and Codex. Both install the same skill, which needs Node 20 or later.
+
+In Claude Code:
+
+```
+/plugin install openarc --marketplace hvess/openarc
+```
+
+In Codex, add the marketplace, then install OpenArc from `/plugins` and start a new session:
+
+```bash
+codex plugin marketplace add hvess/openarc
+```
+
+Then ask for an OpenArc of your branch, or invoke the skill directly (`/openarc:openarc` in Claude Code, `$openarc` in Codex). It writes `.openarc/<name>/index.html` in your repository; `.openarc/` ignores itself in git.
 
 ## Try the example
 
