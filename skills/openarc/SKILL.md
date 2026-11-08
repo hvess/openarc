@@ -9,7 +9,7 @@ You are producing an OpenArc for a code change: a graph of its architecture and 
 
 ## The CLI
 
-The OpenArc CLI is `bin/openarc.mjs`, two folders up from the folder this file is in (`<this skill's folder>/../../bin/openarc.mjs`). Work out its absolute path once and use it for every command below; it needs Node 20 or later and nothing else. In this file, `openarc` means `node <that path>`.
+The OpenArc CLI is `bin/openarc.ts`, two folders up from the folder this file is in (`<this skill's folder>/../../bin/openarc.ts`). Work out its absolute path once and use it for every command below; it needs Node 22.18 or later, which runs TypeScript directly, and nothing else. In this file, `openarc` means `node <that path>`.
 
 ## Steps
 

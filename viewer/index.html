@@ -9,7 +9,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="tokens.css">
 <style>
-/* Every value here comes from a token in tokens.css. tools/lint-design.mjs enforces it. */
+/* Every value here comes from a token in tokens.css. tools/lint-design.ts enforces it. */
 * { box-sizing: border-box; }
 html, body { margin: 0; height: 100%; }
 body { background: var(--color-canvas-bg); color: var(--color-text-primary); font: var(--type-body-font); -webkit-font-smoothing: antialiased; overflow: hidden; }
@@ -199,7 +199,7 @@ details.raw .why { margin: var(--space-2) 0 var(--space-3); color: var(--color-t
 .raw .seg { margin-bottom: var(--space-3); }
 pre.code .no { display: inline-block; width: var(--space-10); padding-right: var(--space-3); text-align: right; color: var(--color-text-quaternary); user-select: none; }
 
-/* The width is the breakpoint.narrow token; tools/lint-design.mjs checks it. */
+/* The width is the breakpoint.narrow token; tools/lint-design.ts checks it. */
 @media (max-width: 760px) {
   #app { grid-template-columns: minmax(0, 1fr); }
   #side { position: absolute; inset: 0 0 auto 0; max-height: 80dvh; border-right: 0; border-bottom: var(--border-width) solid var(--color-border-default); box-shadow: var(--shadow-raised); transform: translateY(-101%); transition: transform var(--motion-duration-base) var(--motion-easing-standard); }
@@ -229,10 +229,10 @@ pre.code .no { display: inline-block; width: var(--space-10); padding-right: var
   </main>
 </div>
 
-<!-- tools/page.mjs inlines each of these in a built page. -->
+<!-- tools/page.ts inlines each of these in a built page. -->
 <script id="openarc-data" type="application/json"></script>
 <script src="../vendor/elkjs/elk-api.js"></script>
 <script id="openarc-elk" type="text/plain" data-src="../vendor/elkjs/elk-worker.min.js"></script>
-<script type="module" src="src/main.js"></script>
+<script type="module" src="src/main.ts"></script>
 </body>
 </html>

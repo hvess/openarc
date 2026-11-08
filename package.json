@@ -5,16 +5,21 @@
   "description": "Turns a code change into an interactive architecture diagram.",
   "type": "module",
   "engines": {
-    "node": ">=20"
+    "node": ">=22.18"
   },
   "bin": {
-    "openarc": "bin/openarc.mjs"
+    "openarc": "bin/openarc.ts"
   },
   "scripts": {
-    "build": "node tools/build.mjs examples/rate-limit",
-    "check": "node tools/check.mjs",
-    "test": "node --test tests/*.test.mjs",
-    "bench": "node bench/generate.mjs 25 50 100 200",
-    "serve": "python3 -m http.server 4719"
+    "build": "node tools/build.ts examples/rate-limit",
+    "check": "node tools/check.ts",
+    "typecheck": "tsc -p . && tsc -p viewer",
+    "test": "node --test tests/*.test.ts",
+    "bench": "node bench/generate.ts 25 50 100 200",
+    "serve": "node tools/serve.ts"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.5",
+    "typescript": "^7.0.2"
   }
 }

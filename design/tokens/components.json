@@ -216,7 +216,7 @@
     "$type": "dimension",
     "narrow": {
       "$value": "760px",
-      "$description": "At this viewport width and below, the sidebar and inspector become sheets over the canvas. tools/lint-design.mjs checks that the viewer's media query uses this value."
+      "$description": "At this viewport width and below, the sidebar and inspector become sheets over the canvas. tools/lint-design.ts checks that the viewer's media query uses this value."
     }
   }
 }

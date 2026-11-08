@@ -1,0 +1,98 @@
+#!/usr/bin/env node
+// Check WCAG contrast for every colour pairing the viewer uses, in every theme.
+//
+//   node tools/contrast.ts           print a report; exit 1 if any pairing fails
+//
+// Text needs 4.5:1. Marks, edges and de-emphasised metadata need 3:1.
+
+import { buildTokens, type BuiltTokens } from "./tokens.ts";
+import { isMain } from "./is-main.ts";
+
+type RGB = [number, number, number];
+// [foreground, background, minimum, what it is]
+type Pair = [string, string, number, string];
+export interface ContrastResult { theme: string; fg: string; bg: string; min: number; what: string; ratio: number; ok: boolean }
+
+const TEXT = 4.5, UI = 3;
+const SURFACES = ["color.surface.panel", "color.surface.card", "color.surface.sunken"];
+// [foreground, background, minimum, what it is]. Statuses come from the themes; "context" is
+// never a change, so it has its own, smaller set of pairings.
+export const pairs = (statuses: string[]): Pair[] => [
+  ...["primary", "secondary", "tertiary"].flatMap((t) => SURFACES.map((s): Pair => [`color.text.${t}`, s, TEXT, `${t} text`])),
+  ...SURFACES.map((s): Pair => ["color.text.quaternary", s, UI, "metadata"]),
+  ["color.text.primary", "color.canvas.bg", TEXT, "text on canvas"],
+  ["color.accent.text", "color.surface.panel", TEXT, "accent text"],
+  ["color.accent.text", "color.surface.selected", TEXT, "selected member"],
+  ["color.text.on-accent", "color.accent.solid", TEXT, "step numbers"],
+  ["color.accent.solid", "color.canvas.bg", UI, "flow path"],
+  ...statuses.filter((s) => s !== "context").flatMap((s): Pair[] => [
+    [`color.status.${s}.text`, `color.status.${s}.subtle`, TEXT, `${s} pill`],
+    [`color.status.${s}.text`, "color.surface.panel", TEXT, `${s} note label`],
+    [`color.status.${s}.solid`, "color.surface.card", UI, `${s} mark`],
+    [`color.status.${s}.solid`, "color.canvas.bg", UI, `${s} edge`],
+  ]),
+  ["color.status.context.text", "color.status.context.subtle", TEXT, "context pill"],
+  ["color.status.context.solid", "color.canvas.bg", UI, "context edge"],
+  ...["control", "declaration", "name", "value", "verb", "effect"].flatMap((k): Pair[] => [
+    [`color.syntax.${k}`, "color.surface.sunken", TEXT, `Klar ${k}`],
+    [`color.syntax.${k}`, "color.status.added.subtle", TEXT, `Klar ${k} on an added line`],
+    [`color.syntax.${k}`, "color.status.removed.subtle", TEXT, `Klar ${k} on a removed line`],
+  ]),
+  ["color.syntax.operator", "color.surface.sunken", UI, "Klar operator"],
+  ["color.syntax.comment", "color.surface.sunken", UI, "Klar comment"],
+];
+
+export function checkContrast({ colors, statuses }: Pick<BuiltTokens, "colors" | "statuses">): ContrastResult[] {
+  const results: ContrastResult[] = [];
+  for (const [theme, map] of Object.entries(colors)) {
+    for (const [fg, bg, min, what] of pairs(statuses)) {
+      const ratio = contrast(parse(map.get(fg)), parse(map.get(bg)));
+      results.push({ theme, fg, bg, min, what, ratio, ok: ratio >= min });
+    }
+  }
+  return results;
+}
+
+// ---------------------------------------------------------------------------
+// Colour maths. Returns linear sRGB in 0..1, clipped to the sRGB gamut.
+
+function parse(value: string | undefined): RGB {
+  if (!value) throw new Error("missing colour");
+  const hex = value.match(/^#([0-9a-f]{6})$/i);
+  if (hex) return [0, 2, 4].map((i) => toLinear(parseInt(hex[1].slice(i, i + 2), 16) / 255)) as RGB;
+  const ok = value.match(/^oklch\(\s*([\d.]+)\s+([\d.]+)\s+([\d.]+)\s*\)$/);
+  if (ok) return oklchToLinear(+ok[1], +ok[2], +ok[3]);
+  throw new Error(`cannot parse colour ${value}`);
+}
+function toLinear(c: number): number {
+  return c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
+}
+function oklchToLinear(L: number, C: number, h: number): RGB {
+  const a = C * Math.cos((h * Math.PI) / 180), b = C * Math.sin((h * Math.PI) / 180);
+  const l = (L + 0.3963377774 * a + 0.2158037573 * b) ** 3;
+  const m = (L - 0.1055613458 * a - 0.0638541728 * b) ** 3;
+  const s = (L - 0.0894841775 * a - 1.291485548 * b) ** 3;
+  return [
+    4.0767416621 * l - 3.3077115913 * m + 0.2309699292 * s,
+    -1.2684380046 * l + 2.6097574011 * m - 0.3413193965 * s,
+    -0.0041960863 * l - 0.7034186147 * m + 1.707614701 * s,
+  ].map((c) => Math.min(1, Math.max(0, c))) as RGB;
+}
+function luminance([r, g, b]: RGB): number {
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+}
+function contrast(a: RGB, b: RGB): number {
+  const [hi, lo] = [luminance(a), luminance(b)].sort((x, y) => y - x);
+  return (hi + 0.05) / (lo + 0.05);
+}
+
+if (isMain(import.meta.url)) {
+  const results = checkContrast(buildTokens());
+  const failed = results.filter((r) => !r.ok);
+  const short = (p: string) => p.replace(/^color\./, "");
+  for (const r of process.argv.includes("--all") ? results : failed) {
+    console.log(`${r.ok ? "✓" : "✗"} ${r.theme.padEnd(6)} ${r.ratio.toFixed(2).padStart(5)} / ${r.min}  ${r.what.padEnd(34)} ${short(r.fg)} on ${short(r.bg)}`);
+  }
+  console.log(`${results.length - failed.length} of ${results.length} pairings pass`);
+  process.exit(failed.length ? 1 : 0);
+}

@@ -23,14 +23,14 @@ The raw code is still there for checking the Klar against it, one click away, bu
 | [`tests/`](tests) | Tests for the tools, run with Node's built-in runner |
 | [`bench/`](bench) | Synthetic graphs of any size and a script that times the viewer on them |
 | [`vendor/elkjs`](vendor/elkjs) | ELK 0.9.3, the layout engine, pinned (EPL-2.0) |
-| [`bin/openarc.mjs`](bin/openarc.mjs) | The command line: `new` sets up a change from git, `build` checks it and builds its page |
+| [`bin/openarc.ts`](bin/openarc.ts) | The command line: `new` sets up a change from git, `build` checks it and builds its page |
 | [`skills/openarc`](skills/openarc/SKILL.md) | The skill that drives an agent through a change, shared by the Claude Code and Codex plugins |
 | [`.claude-plugin/`](.claude-plugin), [`plugin.json`](plugin.json), [`.agents/plugins/`](.agents/plugins) | Plugin and marketplace manifests for Claude Code and Codex |
 | [`examples/rate-limit`](examples/rate-limit) | A worked example: adding a token-bucket rate limiter to a small TypeScript API |
 
 ## Install the plugin
 
-This repository is its own plugin marketplace for Claude Code and Codex. Both install the same skill, which needs Node 20 or later.
+This repository is its own plugin marketplace for Claude Code and Codex. Both install the same skill, which needs Node 22.18 or later.
 
 In Claude Code:
 
@@ -52,24 +52,26 @@ Then ask for an OpenArc of your branch, or invoke the skill directly (`/openarc:
 npm run build
 ```
 
-This writes `examples/rate-limit/graph.json` and `examples/rate-limit/index.html`, a single page with the graph, the viewer and its layout engine inlined. Serve the folder and open it:
+This writes `examples/rate-limit/graph.json` and `examples/rate-limit/index.html`, a single page with the graph, the viewer and its layout engine inlined. Serve the repository and open `examples/rate-limit/` in it:
 
 ```bash
 npm run serve
 ```
 
-OpenArc has no dependencies to install; everything runs on Node 20 or later.
+OpenArc is written in TypeScript, and Node 22.18 or later runs it as it is: there is no compile step, and nothing to install to build or use it. Node removes the types as it loads each file, and the build does the same for the viewer before inlining it. TypeScript itself is only needed to check the types, so it is the one development dependency (`npm install`, then `npm run typecheck`).
 
 | Command | |
 |---|---|
-| `npm run build` | Build the example. `node tools/build.mjs <dir>` builds any example directory |
+| `npm run build` | Build the example. `node tools/build.ts <dir>` builds any example directory |
 | `npm run check` | Check the design system: the viewer's CSS uses tokens only, and every colour pairing meets WCAG contrast |
 | `npm test` | Run the tests |
-| `npm run bench` | Generate 25- to 200-component graphs in `bench/out/` for measuring the viewer; [`bench/generate.mjs`](bench/generate.mjs) says how |
+| `npm run typecheck` | Check the types of the tools, the command line, the tests and the viewer |
+| `npm run serve` | Serve the repository on port 4719 (or `$PORT`), with `.ts` files served as JavaScript |
+| `npm run bench` | Generate 25- to 200-component graphs in `bench/out/` for measuring the viewer; [`bench/generate.ts`](bench/generate.ts) says how |
 
 The build fails if the graph doesn't conform to [the spec](spec/graph.md#10-conformance): it validates against the schema, ids are unique, every reference resolves, and every source line range exists.
 
-To work on the viewer without building, serve the repository and open `viewer/index.html?src=../examples/rate-limit/graph.json`. It loads its modules and stylesheet directly.
+To work on the viewer without building, run `npm run serve` and open the address it prints, `viewer/index.html?src=../examples/rate-limit/graph.json`. The page loads its modules and stylesheet directly; the server strips the modules' types as it sends them, so a reload picks up every edit.
 
 ## Configuration
 

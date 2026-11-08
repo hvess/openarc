@@ -9,13 +9,13 @@ design/
   tokens/components.json   component sizes, breakpoints and viewer behaviour
   themes/light.json        colours and shadows for one theme
   themes/dark.json
-tools/tokens.mjs           JSON → viewer/tokens.css
-tools/lint-design.mjs      rejects raw values in the viewer CSS
-tools/contrast.mjs         measures WCAG contrast for every colour pairing
-tools/check.mjs            runs both; `npm run check`
+tools/tokens.ts            JSON → viewer/tokens.css
+tools/lint-design.ts       rejects raw values in the viewer CSS
+tools/contrast.ts          measures WCAG contrast for every colour pairing
+tools/check.ts             runs both; `npm run check`
 ```
 
-`node tools/build.mjs <example>` regenerates the tokens and inlines the CSS, so a built page is always in sync with `design/`. `npm run check` runs the lint and the contrast check.
+`node tools/build.ts <example>` regenerates the tokens and inlines the CSS, so a built page is always in sync with `design/`. `npm run check` runs the lint and the contrast check.
 
 ## Layers
 
@@ -119,7 +119,7 @@ Each theme defines the same set of colour roles:
 | `color.syntax` | `control`, `declaration`, `name`, `value`, `verb`, `operator`, `effect`, `comment` | Klar highlighting, one per token class in the [Klar spec](../spec/klar.md#13-highlighting) |
 | `shadow` | `raised`, `overlay` | Cards and controls; the inspector |
 
-For each status, `tokens.mjs` also generates a class, such as `.s-added`, that sets `--st-solid`, `--st-text` and `--st-subtle`. Components write one rule for every status (`.dot { background: var(--st-solid) }`) and put the status class on the element. A new status needs only its colours in each theme.
+For each status, `tokens.ts` also generates a class, such as `.s-added`, that sets `--st-solid`, `--st-text` and `--st-subtle`. Components write one rule for every status (`.dot { background: var(--st-solid) }`) and put the status class on the element. A new status needs only its colours in each theme.
 
 Status always means the same thing everywhere: green is added, amber is changed, red is removed, grey is context. Accent (indigo) is reserved for what the reader is doing (selection, flows, focus), so it never competes with status.
 
@@ -139,7 +139,7 @@ Its CSS appears as `:root[data-theme="<name>"]`. Only colours and shadows are th
 
 ## Rules
 
-`tools/lint-design.mjs` checks the viewer stylesheet and rejects:
+`tools/lint-design.ts` checks the viewer stylesheet and rejects:
 
 - colour literals (`#hex`, `rgb()`, `hsl()`)
 - pixel lengths and durations
@@ -148,4 +148,4 @@ Its CSS appears as `:root[data-theme="<name>"]`. Only colours and shadows are th
 
 Media query conditions can't use custom properties, so instead their widths must equal a `breakpoint` token.
 
-`tools/contrast.mjs` measures WCAG contrast for every colour pairing the viewer uses, in every theme, and `npm run check` fails if one falls short: 4.5:1 for text, including Klar on added and removed lines, and 3:1 for status marks, edges and de-emphasised metadata. Run `node tools/contrast.mjs --all` to see every ratio.
+`tools/contrast.ts` measures WCAG contrast for every colour pairing the viewer uses, in every theme, and `npm run check` fails if one falls short: 4.5:1 for text, including Klar on added and removed lines, and 3:1 for status marks, edges and de-emphasised metadata. Run `node tools/contrast.ts --all` to see every ratio.
