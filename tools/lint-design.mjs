@@ -10,6 +10,7 @@
 import { readFileSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
+import { isMain } from "./is-main.mjs";
 
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
 
@@ -46,7 +47,7 @@ export function lintDesign(file = join(root, "viewer/index.html")) {
   return problems;
 }
 
-if (process.argv[1] === fileURLToPath(import.meta.url)) {
+if (isMain(import.meta.url)) {
   const problems = lintDesign();
   if (problems.length) {
     console.error(problems.map((p) => "  ✗ " + p).join("\n"));

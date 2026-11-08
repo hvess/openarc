@@ -35,3 +35,9 @@ test("parseKlar splits effects before and after a change", () => {
   assert.deepEqual(f.effects, ["writes db", "fails NotFound"]);
   assert.deepEqual(f.baseEffects, ["reads db"]);
 });
+
+test("parseKlar names a file component by its quoted path", () => {
+  const klar = parseKlar(["+ file \".claude-plugin/plugin.json\"", "    const version = \"0.1.0\", kept equal to package.json", "", "  module m", "    f() …"].join("\n"));
+  assert.deepEqual([...klar.keys()], [".claude-plugin/plugin.json", "m"]);
+  assert.deepEqual([...klar.get(".claude-plugin/plugin.json").members.keys()], ["version"]);
+});

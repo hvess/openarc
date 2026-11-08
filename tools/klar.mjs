@@ -14,7 +14,7 @@ export function parseKlar(text) {
     if (!content) { if (member) member.lines.push(""); continue; }
     if (indent === 0) {
       const m = content.match(COMPONENT_LINE);
-      comp = m ? { name: m[2], header: [raw], doc: null, members: new Map() } : null;
+      comp = m ? { name: m[2] ?? m[3], header: [raw], doc: null, members: new Map() } : null;
       if (comp) comps.set(comp.name, comp);
       member = null;
       continue;

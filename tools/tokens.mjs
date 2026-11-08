@@ -14,6 +14,7 @@
 import { readFileSync, writeFileSync, readdirSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
+import { isMain } from "./is-main.mjs";
 
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
 const read = (p) => JSON.parse(readFileSync(join(root, p), "utf8"));
@@ -140,7 +141,7 @@ function toCSS(path, token, value) {
   }
 }
 
-if (process.argv[1] === fileURLToPath(import.meta.url)) {
+if (isMain(import.meta.url)) {
   const { css, themes } = buildTokens();
   writeFileSync(join(root, "viewer/tokens.css"), css);
   console.log(`✓ viewer/tokens.css (themes: ${themes.join(", ")})`);

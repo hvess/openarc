@@ -17,6 +17,7 @@ import { fileURLToPath } from "node:url";
 import { assembleGraph } from "./graph.mjs";
 import { buildPage } from "./page.mjs";
 import { buildTokens } from "./tokens.mjs";
+import { isMain } from "./is-main.mjs";
 
 // Returns { problems } when the change doesn't build, otherwise the files written.
 export function buildChange(dir) {
@@ -43,7 +44,7 @@ export function report(result) {
   return `✓ ${result.graphFile}\n✓ ${result.pageFile} (theme: ${theme}, layout engine: ${layoutEngine}; ${from})`;
 }
 
-if (process.argv[1] === fileURLToPath(import.meta.url)) {
+if (isMain(import.meta.url)) {
   const dir = process.argv[2];
   if (!dir) {
     console.error("usage: node tools/build.mjs <change-dir>");

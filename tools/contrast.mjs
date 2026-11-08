@@ -5,8 +5,8 @@
 //
 // Text needs 4.5:1. Marks, edges and de-emphasised metadata need 3:1.
 
-import { fileURLToPath } from "node:url";
 import { buildTokens } from "./tokens.mjs";
+import { isMain } from "./is-main.mjs";
 
 const TEXT = 4.5, UI = 3;
 const SURFACES = ["color.surface.panel", "color.surface.card", "color.surface.sunken"];
@@ -81,7 +81,7 @@ function contrast(a, b) {
   return (hi + 0.05) / (lo + 0.05);
 }
 
-if (process.argv[1] === fileURLToPath(import.meta.url)) {
+if (isMain(import.meta.url)) {
   const results = checkContrast(buildTokens());
   const failed = results.filter((r) => !r.ok);
   const short = (p) => p.replace(/^color\./, "");

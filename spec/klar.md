@@ -97,6 +97,15 @@ A component is something a reviewer would draw as a box.
 | `record` | Data with no behaviour: a struct, data class or plain object type |
 | `enum` | A closed set of cases |
 | `external` | Something outside the codebase that the change talks to, such as a third-party API |
+| `file` | A file that isn't code but that the change adds, changes or relies on: configuration, a manifest, a stylesheet, written instructions |
+
+A `file` is named by its path from the repository root, in quotes, because paths aren't names from the code. It has no functions. Its members are the settings or sections that matter to the change, written as `const` lines (below), so a reviewer can see what each one says and what reads it:
+
+```klar
++ file ".claude-plugin/plugin.json"
+    const name = "openarc", the plugin's name in every command
+    const version = "0.1.0", kept equal to package.json
+```
 
 Inside a component, before its functions:
 
@@ -314,7 +323,7 @@ Renderers and editors colour Klar with these token classes:
 | Class | Covers |
 |---|---|
 | control | `If`, `Else`, `Else if`, `Depending on`, `When`, `For each`, `While`, `Repeat up to`, `Skip`, `Stop`, `Wait for`, `Wait for all`, `Return`, `Fail` |
-| declaration | `class`, `module`, `interface`, `record`, `enum`, `external`, `needs`, `state`, `const`, `private`, `klar`, `change` |
+| declaration | `class`, `module`, `interface`, `record`, `enum`, `external`, `file`, `needs`, `state`, `const`, `private`, `klar`, `change` |
 | name | names from the code: components, members, inputs and bound names |
 | call | a call that the graph connects to a function (§ 7.2) |
 | verb | the verbs of § 7.1 at the start of a step |
@@ -351,7 +360,7 @@ document    = version , [ change ] , { comment | blank | component } ;
 version     = gutter , "klar 0.2" , NL ;
 change      = gutter , "change" , SP , text , NL ;
 
-component   = gutter , INDENT(0) , kind , SP , Name , NL ,
+component   = gutter , INDENT(0) , ( kind , SP , Name | "file" , SP , '"' , path , '"' ) , NL ,
               { needs | state | const | function } ;
 kind        = "class" | "interface" | "module" | "record" | "enum" | "external" ;
 needs       = gutter , INDENT(2) , "needs" , SP , names , NL ;

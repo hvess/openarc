@@ -60,7 +60,7 @@ A component's status summarises its members. A component is `changed` if it is n
 |---|---|---|
 | `id` | yes | Unique id |
 | `name` | yes | Display name |
-| `kind` | yes | `class`, `interface`, `module`, `record`, `enum` or `external`, as in [Klar § 5](klar.md#5-components) |
+| `kind` | yes | `class`, `interface`, `module`, `record`, `enum`, `external` or `file`, as in [Klar § 5](klar.md#5-components). A `file` component's `name` is its path |
 | `status` | yes | § 3 |
 | `file` | no | Path of the defining file, relative to the repository root |
 | `group` | no | Id of a `groups` entry, such as a package or directory |

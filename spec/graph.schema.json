@@ -51,7 +51,7 @@
       "properties": {
         "id": { "type": "string", "minLength": 1 },
         "name": { "type": "string", "minLength": 1 },
-        "kind": { "enum": ["class", "interface", "module", "record", "enum", "external"] },
+        "kind": { "enum": ["class", "interface", "module", "record", "enum", "external", "file"] },
         "status": { "$ref": "#/$defs/status" },
         "file": { "type": "string" },
         "group": { "type": "string" },
